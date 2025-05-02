@@ -1,16 +1,31 @@
 "use client"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
+import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../hooks/useTheme"
 import StackScreen from "../screens/main/Stack"
+import CardDetail from "../screens/main/CardDetail"
 import SettingsNavigator from "./SettingsNavigator"
-import { View, StyleSheet } from "react-native"
+import { View, StyleSheet, Platform } from "react-native"
+import { StackParamList, TabParamList } from "./types"
 
 // Placeholder screens
-const ShareScreen = () => <View style={{ flex: 1 }} />
-const ScanScreen = () => <View style={{ flex: 1 }} />
+const ShareScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
+const ScanScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
+const AccountScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
 
-const Tab = createBottomTabNavigator()
+const Tab = createBottomTabNavigator<TabParamList>()
+const Stack = createNativeStackNavigator<StackParamList>()
+
+// Stack navigator for the Stack tab
+const StackNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="StackMain" component={StackScreen} />
+      <Stack.Screen name="CardDetail" component={CardDetail} />
+    </Stack.Navigator>
+  )
+}
 
 const MainNavigator = () => {
   const { colors } = useTheme()
@@ -19,17 +34,24 @@ const MainNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: "#FFCC4D",
+        tabBarInactiveTintColor: "#888888",
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          backgroundColor: "#1E1B4B",
+          borderTopWidth: 0,
+          height: 80,
+          paddingBottom: Platform.OS === "ios" ? 20 : 10,
+          paddingTop: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "500",
         },
       }}
     >
       <Tab.Screen
         name="Account"
-        component={SettingsNavigator}
+        component={AccountScreen}
         options={{
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
@@ -45,9 +67,11 @@ const MainNavigator = () => {
         name="Share"
         component={ShareScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <View style={styles.shareButton}>
-              <Ionicons name="arrow-up" size={size} color="#FFFFFF" />
+          tabBarIcon: ({ focused }) => (
+            <View style={styles.shareButtonContainer}>
+              <View style={[styles.shareButton, { backgroundColor: focused ? "#FFCC4D" : "#FFFFFF" }]}>
+                <Ionicons name="arrow-up" size={24} color="#1E1B4B" />
+              </View>
             </View>
           ),
           tabBarLabel: () => null,
@@ -62,7 +86,7 @@ const MainNavigator = () => {
       />
       <Tab.Screen
         name="Stack"
-        component={StackScreen}
+        component={StackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline" size={size} color={color} />,
         }}
@@ -72,14 +96,21 @@ const MainNavigator = () => {
 }
 
 const styles = StyleSheet.create({
+  shareButtonContainer: {
+    position: "absolute",
+    top: -30,
+    width: 60,
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   shareButton: {
-    backgroundColor: "#1E1B4B",
     width: 60,
     height: 60,
     borderRadius: 30,
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -88,4 +119,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default MainNavigator
+export default MainNavigator;

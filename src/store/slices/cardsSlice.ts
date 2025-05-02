@@ -13,6 +13,14 @@ export interface Card {
     [key: string]: string
   }
   isPrime?: boolean
+  bio?: string
+  location?: {
+    country?: string
+    city?: string
+    address?: string
+    postalCode?: string
+  }
+  category?: "FAMILY" | "FRIENDS" | "WORK" | "OTHER"
   createdAt: number
   updatedAt: number
   blockchainId?: string
@@ -48,6 +56,14 @@ export const fetchCards = createAsyncThunk("cards/fetchCards", async (_, { rejec
         phone: "+1 234 567 890",
         email: "john.doe@example.com",
         isPrime: true,
+        bio: "John is a dedicated software engineer with a passion for creating user-friendly applications.",
+        location: {
+          country: "Ukraine",
+          city: "Kiev",
+          address: "Lobanovskogo str. Building 5",
+          postalCode: "03156",
+        },
+        category: "FAMILY",
         createdAt: Date.now(),
         updatedAt: Date.now(),
         blockchainId: "sol:abc123",
@@ -60,9 +76,64 @@ export const fetchCards = createAsyncThunk("cards/fetchCards", async (_, { rejec
         avatar: "https://randomuser.me/api/portraits/women/32.jpg",
         phone: "+1 234 567 891",
         email: "jane.smith@example.com",
+        category: "FRIENDS",
         createdAt: Date.now() - 86400000, // 1 day ago
         updatedAt: Date.now() - 86400000,
         blockchainId: "sol:def456",
+      },
+      {
+        id: "3",
+        type: "VAC",
+        name: "John Doe",
+        nickname: "Johny",
+        avatar: "https://randomuser.me/api/portraits/men/33.jpg",
+        phone: "+1 234 567 892",
+        email: "john.doe2@example.com",
+        category: "FAMILY",
+        createdAt: Date.now() - 172800000, // 2 days ago
+        updatedAt: Date.now() - 172800000,
+        blockchainId: "sol:ghi789",
+      },
+      {
+        id: "4",
+        type: "CAC",
+        name: "John Doe",
+        nickname: "Johny",
+        avatar: "https://randomuser.me/api/portraits/men/34.jpg",
+        phone: "+1 234 567 893",
+        email: "john.doe3@example.com",
+        isPrime: true,
+        category: "FRIENDS",
+        createdAt: Date.now() - 259200000, // 3 days ago
+        updatedAt: Date.now() - 259200000,
+        blockchainId: "sol:jkl012",
+      },
+      {
+        id: "5",
+        type: "PAC",
+        name: "John Doe",
+        nickname: "Johny",
+        avatar: "https://randomuser.me/api/portraits/men/35.jpg",
+        phone: "+1 234 567 894",
+        email: "john.doe4@example.com",
+        category: "FAMILY",
+        createdAt: Date.now() - 345600000, // 4 days ago
+        updatedAt: Date.now() - 345600000,
+        blockchainId: "sol:mno345",
+      },
+      {
+        id: "6",
+        type: "VAC",
+        name: "John Doe",
+        nickname: "Johny",
+        avatar: "https://randomuser.me/api/portraits/men/36.jpg",
+        phone: "+1 234 567 895",
+        email: "john.doe5@example.com",
+        isPrime: true,
+        category: "FRIENDS",
+        createdAt: Date.now() - 432000000, // 5 days ago
+        updatedAt: Date.now() - 432000000,
+        blockchainId: "sol:pqr678",
       },
     ] as Card[]
   } catch (error) {
@@ -90,6 +161,9 @@ export const createCard = createAsyncThunk("cards/createCard", async (cardData: 
       phone: cardData.phone,
       email: cardData.email,
       social: cardData.social,
+      bio: cardData.bio,
+      location: cardData.location,
+      category: cardData.category || "OTHER",
       isPrime: cardData.isPrime || false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
