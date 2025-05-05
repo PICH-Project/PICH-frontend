@@ -8,10 +8,10 @@ import CardDetail from "../screens/main/CardDetail"
 import SettingsNavigator from "./SettingsNavigator"
 import { View, StyleSheet, Platform } from "react-native"
 import { StackParamList, TabParamList } from "./types"
+import ScanScreen from "@/screens/main/Scan"
 
 // Placeholder screens
 const ShareScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
-const ScanScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
 const AccountScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
 
 const Tab = createBottomTabNavigator<TabParamList>()

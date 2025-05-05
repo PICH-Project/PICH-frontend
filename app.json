@@ -14,14 +14,18 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pich.app"
+      "bundleIdentifier": "com.pich.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need access to your camera to scan QR codes for adding cards to your stack."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.pich.app"
+      "package": "com.pich.app",
+      "permissions": ["CAMERA"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,7 +36,14 @@
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PICH to access your camera to scan QR codes."
+        }
       ]
-    ]
+    ],
+    "newArchEnabled": true
   }
 }

@@ -9,5 +9,6 @@ export type TabParamList = {
     Share: undefined;
     Scan: undefined;
     Stack: undefined;
+    Actions: { cardId?: string }
 };
   
