@@ -2,17 +2,17 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../hooks/useTheme"
 import StackScreen from "../screens/main/Stack"
 import CardDetail from "../screens/main/CardDetail"
+import ScanScreen from "../screens/main/Scan"
+import ActionsScreen from "../screens/main/Actions"
 import SettingsNavigator from "./SettingsNavigator"
 import { View, StyleSheet, Platform } from "react-native"
-import { StackParamList, TabParamList } from "./types"
-import ScanScreen from "@/screens/main/Scan"
+import type { TabParamList, StackParamList } from "./types"
 
 // Placeholder screens
-const ShareScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
 const AccountScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
+const ShareScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
 
 const Tab = createBottomTabNavigator<TabParamList>()
 const Stack = createNativeStackNavigator<StackParamList>()
@@ -23,13 +23,12 @@ const StackNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="StackMain" component={StackScreen} />
       <Stack.Screen name="CardDetail" component={CardDetail} />
+      <Stack.Screen name="Actions" component={ActionsScreen} />
     </Stack.Navigator>
   )
 }
 
 const MainNavigator = () => {
-  const { colors } = useTheme()
-
   return (
     <Tab.Navigator
       screenOptions={{
@@ -119,4 +118,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default MainNavigator;
+export default MainNavigator

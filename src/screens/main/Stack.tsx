@@ -14,13 +14,13 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import type { StackParamList } from "@/navigation/types"
 import { useTheme } from "../../hooks/useTheme"
 import { useSelector, useDispatch } from "react-redux"
 import type { RootState, AppDispatch } from "../../store"
 import { fetchCards } from "../../store/slices/cardsSlice"
 import type { Card } from "../../store/slices/cardsSlice"
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
-import type { StackParamList } from "@/navigation/types"
 
 interface CardGroup {
   title: string
@@ -30,7 +30,8 @@ interface CardGroup {
 type StackNav = NativeStackNavigationProp<StackParamList>
 
 const StackScreen = () => {
-  const navigation = useNavigation<StackNav>()
+  const navigation = useNavigation()
+  const stackNavigation = useNavigation<StackNav>()
   const { colors } = useTheme()
   const dispatch = useDispatch<AppDispatch>()
   const { cards, loading } = useSelector((state: RootState) => state.cards)
@@ -118,12 +119,19 @@ const StackScreen = () => {
   }
 
   const handleCardPress = (cardId: string) => {
-    navigation.navigate("CardDetail", { cardId })
+    stackNavigation.navigate("CardDetail", { cardId })
   }
 
-  const handleCall = (id: string) => {
+  const handleCall = (id: string, event: any) => {
+    // Stop the event from bubbling up to the card press handler
+    event.stopPropagation()
     console.log("Call card:", id)
     // Implement call functionality
+  }
+
+  const navigateToActions = () => {
+    // Now we can use the stack navigation directly since Actions is part of the Stack navigator
+    stackNavigation.navigate("Actions", {})
   }
 
   const toggleFolderButton = () => {
@@ -143,32 +151,34 @@ const StackScreen = () => {
   }
 
   const renderCard = ({ item }: { item: Card }) => (
-    <TouchableOpacity style={styles.cardContainer} onPress={() => handleCardPress(item.id)} activeOpacity={0.7}>
-      <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(item.type) }]}>
-        <Text style={styles.cardTypeText}>{item.type}</Text>
-      </View>
-
-      <View style={styles.cardContent}>
-        <Image
-          source={{ uri: item.avatar || "https://randomuser.me/api/portraits/men/32.jpg" }}
-          style={styles.avatar}
-        />
-
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardName}>{item.name}</Text>
-          <Text style={styles.cardNickname}>{item.nickname}</Text>
+    <TouchableOpacity style={styles.cardOuterContainer} onPress={() => handleCardPress(item.id)} activeOpacity={0.7}>
+      <View style={styles.cardContainer}>
+        <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(item.type) }]}>
+          <Text style={styles.cardTypeText}>{item.type}</Text>
         </View>
 
-        <TouchableOpacity style={styles.callButton} onPress={() => handleCall(item.id)}>
-          <Ionicons name="call-outline" size={24} color="#000000" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.cardContent}>
+          <Image
+            source={{ uri: item.avatar || "https://randomuser.me/api/portraits/men/32.jpg" }}
+            style={styles.avatar}
+          />
 
-      {item.isPrime && (
-        <View style={styles.primeBadge}>
-          <Text style={styles.primeText}>PRIME</Text>
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardName}>{item.name}</Text>
+            <Text style={styles.cardNickname}>{item.nickname}</Text>
+          </View>
+
+          <TouchableOpacity style={styles.callButton} onPress={(event) => handleCall(item.id, event)}>
+            <Ionicons name="call-outline" size={24} color="#000000" />
+          </TouchableOpacity>
         </View>
-      )}
+
+        {item.isPrime && (
+          <View style={styles.primeBadge}>
+            <Text style={styles.primeText}>PRIME</Text>
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   )
 
@@ -183,7 +193,7 @@ const StackScreen = () => {
       <View style={styles.headerContainer}>
         <View style={styles.header}>
           <Text style={styles.title}>Stack</Text>
-          <TouchableOpacity style={styles.menuButton}>
+          <TouchableOpacity style={styles.menuButton} onPress={navigateToActions}>
             <Ionicons name="menu" size={24} color="#000000" />
           </TouchableOpacity>
         </View>
@@ -340,26 +350,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  cardContainer: {
-    position: "relative",
+  cardOuterContainer: {
     marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: "#FFFFFF",
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 80, // Added minimum height to ensure enough space for PRIME text
+  },
+  cardContainer: {
+    position: "relative",
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    minHeight: 80,
+    overflow: "hidden", // This ensures the badge doesn't overflow the card's border radius
   },
   cardTypeBadge: {
     position: "absolute",
     left: 0,
-    top: 16,
+    top: 0,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12, // Match the card's top-left border radius
+    borderBottomRightRadius: 12, // Only round the bottom-right corner
     zIndex: 1,
   },
   cardTypeText: {

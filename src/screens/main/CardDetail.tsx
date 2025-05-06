@@ -25,9 +25,10 @@ type RouteParams = {
 
 const { width, height } = Dimensions.get("window")
 const CARD_WIDTH = width * 0.9
-const CARD_HEIGHT = height * 0.65
 const CARD_MARGIN = width * 0.05
-const CARD_VERTICAL_OFFSET = 30 // How much of the back card is visible from bottom
+const CARD_VERTICAL_OFFSET = 20 // How much of the back card is visible from bottom
+const FRONT_CARD_POSITION = -20 // Position the front card higher up (negative value)
+const BACK_CARD_POSITION = CARD_VERTICAL_OFFSET // Position the back card lower
 const BACK_CARD_SCALE = 0.95 // Scale factor for the back card
 
 const CardDetail = () => {
@@ -38,8 +39,8 @@ const CardDetail = () => {
   const [showFront, setShowFront] = useState(true)
 
   // Animation values for position and scale
-  const frontPosition = useRef(new Animated.Value(0)).current
-  const backPosition = useRef(new Animated.Value(CARD_VERTICAL_OFFSET)).current
+  const frontPosition = useRef(new Animated.Value(FRONT_CARD_POSITION)).current
+  const backPosition = useRef(new Animated.Value(BACK_CARD_POSITION)).current
   const frontScale = useRef(new Animated.Value(1)).current
   const backScale = useRef(new Animated.Value(BACK_CARD_SCALE)).current
 
@@ -90,7 +91,7 @@ const CardDetail = () => {
       // Move front card to the back (down and scaled)
       Animated.parallel([
         Animated.timing(frontPosition, {
-          toValue: CARD_VERTICAL_OFFSET,
+          toValue: BACK_CARD_POSITION,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -101,7 +102,7 @@ const CardDetail = () => {
         }),
         // Move back card to the front (up and full scale)
         Animated.timing(backPosition, {
-          toValue: 0,
+          toValue: FRONT_CARD_POSITION,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -115,7 +116,7 @@ const CardDetail = () => {
       // Move back card to the back (down and scaled)
       Animated.parallel([
         Animated.timing(backPosition, {
-          toValue: CARD_VERTICAL_OFFSET,
+          toValue: BACK_CARD_POSITION,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -126,7 +127,7 @@ const CardDetail = () => {
         }),
         // Move front card to the front (up and full scale)
         Animated.timing(frontPosition, {
-          toValue: 0,
+          toValue: FRONT_CARD_POSITION,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -154,13 +155,16 @@ const CardDetail = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: "#F5F5F7" }]}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="menu" size={24} color="#000000" />
-        </TouchableOpacity>
+      {/* Header with shadow */}
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#000000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuButton}>
+            <Ionicons name="menu" size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.cardContainer}>
@@ -168,6 +172,7 @@ const CardDetail = () => {
         <Animated.View
           style={[
             styles.card,
+            styles.cardFixedHeight, // Added fixed height to ensure consistency
             {
               zIndex: showFront ? 1 : 2,
               transform: [{ translateY: backPosition }, { scale: backScale }],
@@ -239,6 +244,7 @@ const CardDetail = () => {
         <Animated.View
           style={[
             styles.card,
+            styles.cardFixedHeight, // Added fixed height to ensure consistency
             {
               zIndex: showFront ? 2 : 1,
               transform: [{ translateY: frontPosition }, { scale: frontScale }],
@@ -311,7 +317,7 @@ const CardDetail = () => {
             styles.flipCardTouchArea,
             {
               bottom: 0,
-              height: CARD_VERTICAL_OFFSET + 40, // Make touch area larger than visible area
+              height: CARD_VERTICAL_OFFSET + 60, // Increased touch area for better interaction
             },
           ]}
           onPress={flipCard}
@@ -330,6 +336,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  headerContainer: {
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    marginBottom: 10,
   },
   header: {
     flexDirection: "row",
@@ -361,7 +378,6 @@ const styles = StyleSheet.create({
   card: {
     position: "absolute",
     width: CARD_WIDTH,
-    paddingBottom: 30,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 16,
@@ -369,6 +385,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
     elevation: 5,
+    overflow: "visible",
+  },
+  cardFixedHeight: {
+    height: height * 0.64,
   },
   flipCardTouchArea: {
     position: "absolute",
@@ -378,10 +398,10 @@ const styles = StyleSheet.create({
   cardTypeBadge: {
     position: "absolute",
     left: 0,
-    top: 16,
+    top: 0,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 20,
     borderBottomRightRadius: 20,
     zIndex: 1,
   },
@@ -393,11 +413,11 @@ const styles = StyleSheet.create({
   primeBadge: {
     position: "absolute",
     right: 0,
-    top: 16,
+    top: 0,
     backgroundColor: "#FFCC4D",
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     borderBottomLeftRadius: 20,
     zIndex: 1,
   },
@@ -408,7 +428,7 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 45,
     position: "relative",
   },
   avatar: {
@@ -434,7 +454,7 @@ const styles = StyleSheet.create({
   },
   nameSection: {
     alignItems: "center",
-    marginTop: 16,
+    marginTop: 12,
   },
   name: {
     fontSize: 28,
@@ -447,9 +467,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   descriptionSection: {
-    marginTop: 24,
+    marginTop: 20,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#EEEEEE",
@@ -466,8 +486,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFCC4D",
     borderRadius: 30,
-    paddingVertical: 16,
-    marginTop: 24,
+    paddingVertical: 14,
+    marginTop: 20,
   },
   callButtonText: {
     fontSize: 18,
@@ -478,7 +498,7 @@ const styles = StyleSheet.create({
   socialIconsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 24,
+    marginTop: 20,
     paddingHorizontal: 16,
   },
   socialIcon: {
@@ -492,7 +512,7 @@ const styles = StyleSheet.create({
   backCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 24,
+    marginTop: 45,
   },
   backAvatar: {
     width: 80,
@@ -512,10 +532,10 @@ const styles = StyleSheet.create({
     color: "#888888",
   },
   infoSection: {
-    height: 80,
+    height: 70,
     backgroundColor: "#F5F5F5",
     borderRadius: 8,
-    marginTop: 16,
+    marginTop: 14,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -526,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   locationSection: {
-    marginTop: 24,
+    marginTop: 20,
     flexDirection: "row",
     alignItems: "flex-start",
   },
