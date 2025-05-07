@@ -7,6 +7,7 @@ import { useTheme } from "../../hooks/useTheme"
 import Button from "../../components/common/Button"
 import { logout } from "../../store/slices/authSlice"
 import type { AppDispatch, RootState } from "../../store"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 
 const SignOutScreen = () => {
   const navigation = useNavigation()
@@ -62,7 +63,7 @@ const SignOutScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: useTabBarHeight() }]}>
         <Image source={require("../../../assets/logout-icon.png")} style={styles.image} resizeMode="contain" />
         <Text
           style={[

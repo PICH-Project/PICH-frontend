@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
 import Button from "../../components/common/Button"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 
 const AccountSettingsScreen = () => {
   const navigation = useNavigation()
@@ -46,7 +47,10 @@ const AccountSettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: useTabBarHeight() }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.avatarContainer}>
           <Avatar
             uri="https://randomuser.me/api/portraits/men/32.jpg"

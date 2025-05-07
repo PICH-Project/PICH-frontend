@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
+import { useTabBarHeight } from "@/hooks/useTabBarHeight"
 
 const SettingsScreen = () => {
   const navigation = useNavigation()
@@ -50,7 +51,7 @@ const SettingsScreen = () => {
   ]
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background, marginBottom: useTabBarHeight() }]}>
       <View style={styles.header}>
         <Text
           style={[

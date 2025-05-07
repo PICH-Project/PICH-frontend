@@ -18,6 +18,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { StackParamList } from "@/navigation/types"
 import { useTheme } from "../../hooks/useTheme"
 import { useSelector, useDispatch } from "react-redux"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import type { RootState, AppDispatch } from "../../store"
 import { fetchCards } from "../../store/slices/cardsSlice"
 import type { Card } from "../../store/slices/cardsSlice"
@@ -40,6 +41,7 @@ const StackScreen = () => {
   const [isFolderEnabled, setIsFolderEnabled] = useState(false)
   const [isStarEnabled, setIsStarEnabled] = useState(false)
   const [starredCards, setStarredCards] = useState<string[]>([]) // IDs of starred cards
+  const tabBarHeight = useTabBarHeight()
 
   useEffect(() => {
     dispatch(fetchCards())
@@ -131,7 +133,7 @@ const StackScreen = () => {
 
   const navigateToActions = () => {
     // Now we can use the stack navigation directly since Actions is part of the Stack navigator
-    stackNavigation.navigate("Actions", {})
+    stackNavigation.navigate("Actions", { cardId: "" })
   }
 
   const toggleFolderButton = () => {
@@ -239,7 +241,7 @@ const StackScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderCard}
           renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight }]}
           stickySectionHeadersEnabled={false}
           showsVerticalScrollIndicator={false}
         />

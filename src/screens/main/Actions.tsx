@@ -10,6 +10,7 @@ import { useTheme } from "../../hooks/useTheme"
 import { useSelector } from "react-redux"
 import type { RootState } from "../../store"
 import type { StackParamList } from "../../navigation/types"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 
 type ActionsNavigationProp = NativeStackNavigationProp<StackParamList, "Actions">
 type ActionsRouteProp = RouteProp<StackParamList, "Actions">
@@ -122,7 +123,15 @@ const ActionsScreen = () => {
   )
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#F8F8FF" }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: "#F8F8FF",
+           // Add padding for tab bar
+        },
+      ]}
+    >
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.headerContainer}>
@@ -133,7 +142,7 @@ const ActionsScreen = () => {
         <View style={styles.menuButton}>{/* Empty view to maintain header layout */}</View>
       </View>
 
-      <View style={styles.actionsContainer}>
+      <View style={[styles.actionsContainer, { paddingBottom: useTabBarHeight() }]}>
         <View style={styles.actionsContent}>
           {actions.map((action) => (
             <TouchableOpacity key={action.id} style={styles.actionItem} onPress={action.onPress} activeOpacity={0.7}>

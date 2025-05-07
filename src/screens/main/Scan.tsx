@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, Dimensions, StatusBar } from "react-native"
 import { Camera, CameraView } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useIsFocused } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 
 const { width, height } = Dimensions.get("window")
 const SCAN_AREA_SIZE = width * 0.5
@@ -15,6 +16,8 @@ const ScanScreen = () => {
   const { colors } = useTheme()
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [scanned, setScanned] = useState(false)
+  const tabBarHeight = useTabBarHeight()
+  const isFocused = useIsFocused()
 
   useEffect(() => {
     const getBarCodeScannerPermissions = async () => {
@@ -81,50 +84,69 @@ const ScanScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.scanContainer}>
-        <CameraView
-          style={styles.camera}
-          barcodeScannerSettings={{
-            barcodeTypes: ["qr"],
-          }}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        >
-          {/* Darkened overlay with transparent scanning area */}
-          <View style={styles.darkenedOverlay}>
-            {/* Top section (darkened) */}
-            <View style={styles.darkSection} />
-
-            {/* Middle section with scanning area */}
-            <View style={styles.middleSection}>
-              {/* Left darkened area */}
+      <View
+        style={[
+          styles.scanContainer,
+          { marginBottom: tabBarHeight + 16 }, // Add margin to avoid tab bar
+        ]}
+      >
+        {isFocused ? (
+          <CameraView
+            style={styles.camera}
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          >
+            {/* Darkened overlay with transparent scanning area */}
+            <View style={styles.darkenedOverlay}>
+              {/* Top section (darkened) */}
               <View style={styles.darkSection} />
 
-              {/* Clear scanning area */}
-              <View style={styles.scanArea}>
-                {/* Corner markers */}
-                <View style={styles.cornerTL} />
-                <View style={styles.cornerTR} />
-                <View style={styles.cornerBL} />
-                <View style={styles.cornerBR} />
+              {/* Middle section with scanning area */}
+              <View style={styles.middleSection}>
+                {/* Left darkened area */}
+                <View style={styles.darkSection} />
+
+                {/* Clear scanning area */}
+                <View style={styles.scanArea}>
+                  {/* Corner markers */}
+                  <View style={styles.cornerTL} />
+                  <View style={styles.cornerTR} />
+                  <View style={styles.cornerBL} />
+                  <View style={styles.cornerBR} />
+                </View>
+
+                {/* Right darkened area */}
+                <View style={styles.darkSection} />
               </View>
 
-              {/* Right darkened area */}
+              {/* Bottom section (darkened) */}
               <View style={styles.darkSection} />
             </View>
 
-            {/* Bottom section (darkened) */}
-            <View style={styles.darkSection} />
+            <TouchableOpacity style={styles.qrIconContainer}>
+              <Ionicons name="qr-code" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </CameraView>
+        ) : (
+          <View style={[styles.camera, { backgroundColor: "#333", justifyContent: "center", alignItems: "center" }]}>
+            <Text style={{ color: "#FFF", fontSize: 16, textAlign: "center" }}>
+              Camera paused. Return to this screen to resume scanning.
+            </Text>
           </View>
-
-          <TouchableOpacity style={styles.qrIconContainer}>
-            <Ionicons name="qr-code" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        </CameraView>
+        )}
       </View>
 
-      {scanned && (
+      {scanned && isFocused && (
         <TouchableOpacity
-          style={[styles.rescanButton, { backgroundColor: "#4CD964" }]}
+          style={[
+            styles.rescanButton,
+            {
+              backgroundColor: "#4CD964",
+              bottom: tabBarHeight + 16, // Add padding above the tab bar
+            },
+          ]}
           onPress={() => setScanned(false)}
         >
           <Text style={styles.buttonText}>Scan Again</Text>

@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   View,
   Text,
@@ -11,11 +11,13 @@ import {
   Dimensions,
   Linking,
   StatusBar,
+  ScrollView,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import { useSelector } from "react-redux"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import type { RootState } from "../../store"
 import type { Card } from "../../store/slices/cardsSlice"
 
@@ -30,6 +32,7 @@ const CARD_VERTICAL_OFFSET = 20 // How much of the back card is visible from bot
 const FRONT_CARD_POSITION = -20 // Position the front card higher up (negative value)
 const BACK_CARD_POSITION = CARD_VERTICAL_OFFSET // Position the back card lower
 const BACK_CARD_SCALE = 0.95 // Scale factor for the back card
+const HEADER_HEIGHT = 80 // Approximate height of the header container
 
 const CardDetail = () => {
   const navigation = useNavigation()
@@ -37,6 +40,8 @@ const CardDetail = () => {
   const { cardId } = route.params as RouteParams
   const { colors } = useTheme()
   const [showFront, setShowFront] = useState(true)
+  const tabBarHeight = useTabBarHeight()
+  const [cardHeight, setCardHeight] = useState(height * 0.6)
 
   // Animation values for position and scale
   const frontPosition = useRef(new Animated.Value(FRONT_CARD_POSITION)).current
@@ -45,6 +50,14 @@ const CardDetail = () => {
   const backScale = useRef(new Animated.Value(BACK_CARD_SCALE)).current
 
   const card = useSelector((state: RootState) => state.cards.cards.find((c) => c.id === cardId)) as Card
+
+  // Calculate the optimal card height based on available space
+  useEffect(() => {
+    // Calculate available space between header and tab bar
+    const availableHeight = height - HEADER_HEIGHT - tabBarHeight - 40 // 40px for additional padding
+    // Set card height to fit within available space
+    setCardHeight(Math.min(availableHeight * 0.9, height * 0.6)) // Use 90% of available space for cards, but cap at original height
+  }, [height, tabBarHeight])
 
   if (!card) {
     return (
@@ -153,7 +166,7 @@ const CardDetail = () => {
   ]
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#F5F5F7" }]}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       {/* Header with shadow */}
       <View style={styles.headerContainer}>
@@ -167,169 +180,181 @@ const CardDetail = () => {
         </View>
       </View>
 
-      <View style={styles.cardContainer}>
-        {/* Back Card */}
-        <Animated.View
-          style={[
-            styles.card,
-            styles.cardFixedHeight, // Added fixed height to ensure consistency
-            {
-              zIndex: showFront ? 1 : 2,
-              transform: [{ translateY: backPosition }, { scale: backScale }],
-              shadowOpacity: showFront ? 0.1 : 0.2,
-            },
-          ]}
-        >
-          {/* Card Type Badge */}
-          <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(card.type) }]}>
-            <Text style={styles.cardTypeText}>{card.type}</Text>
-          </View>
-
-          {/* Prime Badge if applicable */}
-          {card.isPrime && (
-            <View style={styles.primeBadge}>
-              <Text style={styles.primeText}>PRIME</Text>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.cardContainer}>
+          {/* Back Card */}
+          <Animated.View
+            style={[
+              styles.card,
+              {
+                height: cardHeight,
+                zIndex: showFront ? 1 : 2,
+                transform: [{ translateY: backPosition }, { scale: backScale }],
+                shadowOpacity: showFront ? 0.1 : 0.2,
+              },
+            ]}
+          >
+            {/* Card Type Badge */}
+            <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(card.type) }]}>
+              <Text style={styles.cardTypeText}>{card.type}</Text>
             </View>
-          )}
 
-          {/* Back Card Content */}
-          <View style={styles.backCardHeader}>
-            <Image source={{ uri: card.avatar }} style={styles.backAvatar} />
-            <View style={styles.backNameSection}>
-              <Text style={styles.backName}>{card.name}</Text>
-              <Text style={styles.backNickname}>{card.nickname}</Text>
+            {/* Prime Badge if applicable */}
+            {card.isPrime && (
+              <View style={styles.primeBadge}>
+                <Text style={styles.primeText}>PRIME</Text>
+              </View>
+            )}
+
+            {/* Back Card Content */}
+            <View style={styles.backCardHeader}>
+              <Image source={{ uri: card.avatar }} style={styles.backAvatar} />
+              <View style={styles.backNameSection}>
+                <Text style={styles.backName}>{card.name}</Text>
+                <Text style={styles.backNickname}>{card.nickname}</Text>
+              </View>
             </View>
-          </View>
 
-          {/* Additional Info Sections */}
-          <View style={styles.infoSection}>
-            <TouchableOpacity style={styles.addInfoButton}>
-              <Ionicons name="add" size={24} color="#CCCCCC" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.infoSection}>
-            <TouchableOpacity style={styles.addInfoButton}>
-              <Ionicons name="add" size={24} color="#CCCCCC" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.infoSection}>
-            <TouchableOpacity style={styles.addInfoButton}>
-              <Ionicons name="add" size={24} color="#CCCCCC" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Location Section */}
-          <View style={styles.locationSection}>
-            <View style={styles.locationHeader}>
-              <Ionicons name="location-outline" size={20} color="#AAAAAA" />
-              <Text style={styles.locationLabel}>Location</Text>
+            {/* Additional Info Sections */}
+            <View style={styles.infoSection}>
+              <TouchableOpacity style={styles.addInfoButton}>
+                <Ionicons name="add" size={24} color="#CCCCCC" />
+              </TouchableOpacity>
             </View>
-            <View style={styles.locationContent}>
-              <Text style={styles.locationText}>
-                {card.location?.country || "Ukraine"}, {card.location?.city || "Kiev"}
+
+            <View style={styles.infoSection}>
+              <TouchableOpacity style={styles.addInfoButton}>
+                <Ionicons name="add" size={24} color="#CCCCCC" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.infoSection}>
+              <TouchableOpacity style={styles.addInfoButton}>
+                <Ionicons name="add" size={24} color="#CCCCCC" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Location Section - Updated to match Figma design */}
+            <View style={styles.locationSectionColumn}>
+              <View style={styles.locationHeaderRow}>
+                <Ionicons name="location-outline" size={20} color="#AAAAAA" />
+                <Text style={styles.locationLabel}>Location</Text>
+                <TouchableOpacity style={styles.locationMenu}>
+                  <Ionicons name="ellipsis-vertical" size={20} color="#AAAAAA" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.locationContentColumn}>
+                <Text style={styles.locationText}>
+                  {card.location?.country || "Ukraine"}, {card.location?.city || "Kiev"}
+                </Text>
+                <Text style={styles.locationText}>
+                  {card.location?.address || "Lobanovskogo str. Building 5"}, {card.location?.postalCode || "03156"}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Front Card */}
+          <Animated.View
+            style={[
+              styles.card,
+              {
+                height: cardHeight,
+                zIndex: showFront ? 2 : 1,
+                transform: [{ translateY: frontPosition }, { scale: frontScale }],
+                shadowOpacity: showFront ? 0.2 : 0.1,
+              },
+            ]}
+          >
+            {/* Card Type Badge */}
+            <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(card.type) }]}>
+              <Text style={styles.cardTypeText}>{card.type}</Text>
+            </View>
+
+            {/* Prime Badge if applicable */}
+            {card.isPrime && (
+              <View style={styles.primeBadge}>
+                <Text style={styles.primeText}>PRIME</Text>
+              </View>
+            )}
+
+            {/* Profile Section */}
+            <View style={styles.profileSection}>
+              <Image source={{ uri: card.avatar }} style={styles.avatar} />
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Ionicons name="star-outline" size={24} color="#888888" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Ionicons name="sync-outline" size={24} color="#888888" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Ionicons name="qr-code-outline" size={24} color="#888888" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Name and Nickname */}
+            <View style={styles.nameSection}>
+              <Text style={styles.name}>{card.name}</Text>
+              <Text style={styles.nickname}>{card.nickname}</Text>
+            </View>
+
+            {/* Description */}
+            <View style={styles.descriptionSection}>
+              <Text style={styles.description}>
+                {card.bio ||
+                  "John is a dedicated software engineer with a passion for creating user-friendly applications."}
               </Text>
-              <Text style={styles.locationText}>
-                {card.location?.address || "Lobanovskogo str. Building 5"}, {card.location?.postalCode || "03156"}
-              </Text>
             </View>
-            <TouchableOpacity style={styles.locationMenu}>
-              <Ionicons name="ellipsis-vertical" size={20} color="#AAAAAA" />
+
+            {/* Call Button */}
+            <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+              <Text style={styles.callButtonText}>To call</Text>
+              <Ionicons name="call-outline" size={24} color="#000000" />
             </TouchableOpacity>
-          </View>
-        </Animated.View>
 
-        {/* Front Card */}
-        <Animated.View
-          style={[
-            styles.card,
-            styles.cardFixedHeight, // Added fixed height to ensure consistency
-            {
-              zIndex: showFront ? 2 : 1,
-              transform: [{ translateY: frontPosition }, { scale: frontScale }],
-              shadowOpacity: showFront ? 0.2 : 0.1,
-            },
-          ]}
-        >
-          {/* Card Type Badge */}
-          <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(card.type) }]}>
-            <Text style={styles.cardTypeText}>{card.type}</Text>
-          </View>
-
-          {/* Prime Badge if applicable */}
-          {card.isPrime && (
-            <View style={styles.primeBadge}>
-              <Text style={styles.primeText}>PRIME</Text>
+            {/* Social Media Icons */}
+            <View style={styles.socialIconsContainer}>
+              {socialIcons.map((icon, index) => (
+                <TouchableOpacity key={index} style={[styles.socialIcon, { backgroundColor: icon.backgroundColor }]}>
+                  <Ionicons name={icon.name as any} size={24} color={icon.color} />
+                </TouchableOpacity>
+              ))}
             </View>
-          )}
+          </Animated.View>
 
-          {/* Profile Section */}
-          <View style={styles.profileSection}>
-            <Image source={{ uri: card.avatar }} style={styles.avatar} />
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="star-outline" size={24} color="#888888" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="sync-outline" size={24} color="#888888" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="qr-code-outline" size={24} color="#888888" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Name and Nickname */}
-          <View style={styles.nameSection}>
-            <Text style={styles.name}>{card.name}</Text>
-            <Text style={styles.nickname}>{card.nickname}</Text>
-          </View>
-
-          {/* Description */}
-          <View style={styles.descriptionSection}>
-            <Text style={styles.description}>
-              {card.bio ||
-                "John is a dedicated software engineer with a passion for creating user-friendly applications."}
-            </Text>
-          </View>
-
-          {/* Call Button */}
-          <TouchableOpacity style={styles.callButton} onPress={handleCall}>
-            <Text style={styles.callButtonText}>To call</Text>
-            <Ionicons name="call-outline" size={24} color="#000000" />
-          </TouchableOpacity>
-
-          {/* Social Media Icons */}
-          <View style={styles.socialIconsContainer}>
-            {socialIcons.map((icon, index) => (
-              <TouchableOpacity key={index} style={[styles.socialIcon, { backgroundColor: icon.backgroundColor }]}>
-                <Ionicons name={icon.name as any} size={24} color={icon.color} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Flip Card Touch Area */}
-        <TouchableOpacity
-          style={[
-            styles.flipCardTouchArea,
-            {
-              bottom: 0,
-              height: CARD_VERTICAL_OFFSET + 60, // Increased touch area for better interaction
-            },
-          ]}
-          onPress={flipCard}
-          activeOpacity={0.8}
-        />
-      </View>
+          {/* Flip Card Touch Area */}
+          <TouchableOpacity
+            style={[
+              styles.flipCardTouchArea,
+              {
+                bottom: 0,
+                height: CARD_VERTICAL_OFFSET + 60, // Increased touch area for better interaction
+              },
+            ]}
+            onPress={flipCard}
+            activeOpacity={0.8}
+          />
+        </View>
+        {/* Extra space at the bottom to ensure content doesn't go under tab bar */}
+        <View style={{ height: 20 }} />
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: "#F5F5F7",
+  },
+  scrollContainer: {
     flex: 1,
   },
   centerContent: {
@@ -346,7 +371,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   header: {
     flexDirection: "row",
@@ -370,10 +395,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cardContainer: {
-    flex: 1,
+    height: height * 0.7, // Fixed height for card container
     alignItems: "center",
     position: "relative",
     justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 20,
   },
   card: {
     position: "absolute",
@@ -386,9 +413,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
     overflow: "visible",
-  },
-  cardFixedHeight: {
-    height: height * 0.64,
   },
   flipCardTouchArea: {
     position: "absolute",
@@ -428,7 +452,7 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: "center",
-    marginTop: 45,
+    marginTop: 12,
     position: "relative",
   },
   avatar: {
@@ -512,7 +536,7 @@ const styles = StyleSheet.create({
   backCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 45,
+    marginTop: 24,
   },
   backAvatar: {
     width: 80,
@@ -545,23 +569,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  locationSection: {
-    marginTop: 20,
-    flexDirection: "row",
-    alignItems: "flex-start",
+  // Updated location section styles to match Figma design
+  locationSectionColumn: {
+    marginTop: 12,
+    paddingHorizontal: 4,
   },
-  locationHeader: {
+  locationHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    width: 80,
+    marginBottom: 4,
   },
   locationLabel: {
     fontSize: 16,
     color: "#888888",
     marginLeft: 4,
-  },
-  locationContent: {
     flex: 1,
+  },
+  locationContentColumn: {
+    paddingLeft: 4,
   },
   locationText: {
     fontSize: 16,

@@ -7,7 +7,8 @@ import CardDetail from "../screens/main/CardDetail"
 import ScanScreen from "../screens/main/Scan"
 import ActionsScreen from "../screens/main/Actions"
 import SettingsNavigator from "./SettingsNavigator"
-import { View, StyleSheet, Platform } from "react-native"
+import { View, Text, StyleSheet, Platform, Dimensions, TouchableOpacity } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { TabParamList, StackParamList } from "./types"
 
 // Placeholder screens
@@ -28,80 +29,185 @@ const StackNavigator = () => {
   )
 }
 
+// Custom Tab Bar component with curved top edge
+const CustomTabBar = ({ state, descriptors, navigation }: any) => {
+  const insets = useSafeAreaInsets()
+  const { width } = Dimensions.get("window")
+  const tabBarHeight = 60
+  const bottomInset = Platform.OS === "ios" ? insets.bottom : 10
+  const totalHeight = tabBarHeight + bottomInset
+
+  // Share button configuration
+  const buttonSize = 60
+  const buttonLift = 35 // How much the button sticks out above the tab bar
+
+  return (
+    <View style={[styles.tabBarContainer, { height: totalHeight + buttonLift }]}>
+      {/* Tab bar background */}
+      <View style={[styles.tabBarBackground, { height: totalHeight }]}>
+        {/* Left section */}
+        <View style={styles.tabBarLeftSection} />
+
+        {/* Right section */}
+        <View style={styles.tabBarRightSection} />
+
+        {/* Center bump */}
+        <View style={[styles.tabBarCenterBump, { height: totalHeight + buttonLift / 2 }]} />
+      </View>
+
+      {/* Tab Buttons */}
+      <View style={[styles.tabsContainer, { paddingBottom: bottomInset }]}>
+        {state.routes.map((route: any, index: number) => {
+          const { options } = descriptors[route.key]
+          const label = options.tabBarLabel || options.title || route.name
+          const isFocused = state.index === index
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            })
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name)
+            }
+          }
+
+          // Special case for the Share button
+          if (route.name === "Share") {
+            return (
+              <TouchableOpacity
+                key={route.key}
+                activeOpacity={0.8}
+                onPress={onPress}
+                style={[styles.tabButton, styles.shareButtonContainer]}
+              >
+                <View
+                  style={[
+                    styles.shareButton,
+                    {
+                      backgroundColor: isFocused ? "#FFCC4D" : "#FFFFFF",
+                      bottom: buttonLift,
+                    },
+                  ]}
+                >
+                  <Ionicons name="arrow-up" size={24} color="#2F2F2F" />
+                </View>
+              </TouchableOpacity>
+            )
+          }
+
+          // Regular tab buttons
+          return (
+            <TouchableOpacity key={route.key} onPress={onPress} activeOpacity={0.7} style={styles.tabButton}>
+              <Ionicons
+                name={
+                  route.name === "Account"
+                    ? "person-outline"
+                    : route.name === "Settings"
+                      ? "settings-outline"
+                      : route.name === "Scan"
+                        ? "qr-code-outline"
+                        : "layers-outline" // Stack
+                }
+                size={24}
+                color={isFocused ? "#FFCC4D" : "#AAAAAA"}
+              />
+              <Text style={[styles.tabLabel, { color: isFocused ? "#FFCC4D" : "#AAAAAA" }]}>{label}</Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
 const MainNavigator = () => {
   return (
     <Tab.Navigator
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#FFCC4D",
-        tabBarInactiveTintColor: "#888888",
-        tabBarStyle: {
-          backgroundColor: "#1E1B4B",
-          borderTopWidth: 0,
-          height: 80,
-          paddingBottom: Platform.OS === "ios" ? 20 : 10,
-          paddingTop: 10,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "500",
-        },
       }}
     >
-      <Tab.Screen
-        name="Account"
-        component={AccountScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsNavigator}
-        options={{
-          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
-        }}
-      />
+      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen name="Settings" component={SettingsNavigator} />
       <Tab.Screen
         name="Share"
         component={ShareScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.shareButtonContainer}>
-              <View style={[styles.shareButton, { backgroundColor: focused ? "#FFCC4D" : "#FFFFFF" }]}>
-                <Ionicons name="arrow-up" size={24} color="#1E1B4B" />
-              </View>
-            </View>
-          ),
-          tabBarLabel: () => null,
+          tabBarLabel: "Share",
         }}
       />
-      <Tab.Screen
-        name="Scan"
-        component={ScanScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Ionicons name="qr-code-outline" size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Stack"
-        component={StackNavigator}
-        options={{
-          tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline" size={size} color={color} />,
-        }}
-      />
+      <Tab.Screen name="Scan" component={ScanScreen} />
+      <Tab.Screen name="Stack" component={StackNavigator} />
     </Tab.Navigator>
   )
 }
 
 const styles = StyleSheet.create({
-  shareButtonContainer: {
+  tabBarContainer: {
     position: "absolute",
-    top: -30,
-    width: 60,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "transparent",
+  },
+  tabBarBackground: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  tabBarLeftSection: {
+    position: "absolute",
+    left: 0,
+    bottom: 0,
+    width: "40%",
+    height: "100%",
+    backgroundColor: "#2F2F2F",
+  },
+  tabBarRightSection: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: "40%",
+    height: "100%",
+    backgroundColor: "#2F2F2F",
+  },
+  tabBarCenterBump: {
+    position: "absolute",
+    left: "50%",
+    bottom: 0,
+    width: 120,
+    height: "100%",
+    marginLeft: -60,
+    backgroundColor: "#2F2F2F",
+    borderTopLeftRadius: 60,
+    borderTopRightRadius: 60,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     height: 60,
+  },
+  tabButton: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  shareButtonContainer: {
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  tabLabel: {
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: "500",
   },
   shareButton: {
     width: 60,
@@ -112,9 +218,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
 })
 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } fr
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
+import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 
 interface PlanFeature {
   id: string
@@ -83,7 +84,10 @@ const SubscriptionScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: useTabBarHeight() }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text
           style={[
             styles.title,
