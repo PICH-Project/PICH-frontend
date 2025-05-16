@@ -1,4 +1,7 @@
-import api from "./api"
+import { mockQRCode } from "../utils/mockData"
+
+// Mock delay function to simulate network requests
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * Fetches the user's QR code from the backend
@@ -6,11 +9,11 @@ import api from "./api"
  */
 export const fetchUserQRCode = async (): Promise<string> => {
   try {
-    const response = await api.get("/api/qr/user")
+    // Simulate API delay
+    await delay(1200)
 
-    // The API returns the QR code as a base64 string
-    // It should already be in the format "data:image/png;base64,..."
-    return response.data.qrCode
+    // Return the mock QR code
+    return mockQRCode
   } catch (error) {
     console.error("Error fetching QR code:", error)
     throw error
@@ -23,12 +26,12 @@ export const fetchUserQRCode = async (): Promise<string> => {
  */
 export const refreshUserQRCode = async (): Promise<string> => {
   try {
-    // Since there's no specific refresh endpoint, we just call the generate endpoint again
-    // The backend will generate a new QR code for the authenticated user
-    const response = await api.get("/api/qr/user")
+    // Simulate API delay
+    await delay(1500)
 
-    // The API returns the QR code as a base64 string
-    return response.data
+    // In a real app, we would generate a new QR code
+    // For demo purposes, we'll just return the same mock QR code
+    return mockQRCode
   } catch (error) {
     console.error("Error refreshing QR code:", error)
     throw error

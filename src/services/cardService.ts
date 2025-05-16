@@ -1,4 +1,5 @@
-import api from "./api"
+import { mockCards } from "../utils/mockData"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export interface Card {
   id: string
@@ -64,6 +65,18 @@ export interface UpdateCardPayload {
   isInWallet?: boolean
 }
 
+// Mock delay function to simulate network requests
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Function to get user ID from AsyncStorage
+const getUserId = async (): Promise<string> => {
+  const userJson = await AsyncStorage.getItem("auth_user")
+  if (!userJson) {
+    throw new Error("User not authenticated")
+  }
+  return JSON.parse(userJson).id
+}
+
 /**
  * Service for handling card-related API calls
  */
@@ -75,8 +88,35 @@ const cardService = {
    */
   createCard: async (payload: CreateCardPayload): Promise<Card> => {
     try {
-      const response = await api.post<Card>("/api/cards", payload)
-      return response.data
+      // Simulate API delay
+      await delay(1000)
+
+      const userId = await getUserId()
+
+      // Create a new card
+      const newCard: Card = {
+        id: `card-${Date.now()}`,
+        type: payload.type,
+        name: payload.name,
+        nickname: payload.nickname,
+        email: payload.email,
+        phone: payload.phone,
+        bio: payload.bio,
+        social: payload.social,
+        location: payload.location,
+        category: payload.category,
+        isPrime: false,
+        isMainCard: payload.isMainCard || false,
+        isInWallet: payload.isInWallet || true,
+        userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the new card
+
+      return newCard
     } catch (error) {
       console.error("Create card error:", error)
       throw error
@@ -89,8 +129,15 @@ const cardService = {
    */
   getAllCards: async (): Promise<Card[]> => {
     try {
-      const response = await api.get<Card[]>("/api/cards")
-      return response.data
+      // Simulate API delay
+      await delay(800)
+
+      const userId = await getUserId()
+
+      // Filter cards by user ID
+      // For demo purposes, we'll return all mock cards
+      // In a real app, we would filter by the current user's ID
+      return mockCards
     } catch (error) {
       console.error("Get all cards error:", error)
       throw error
@@ -104,8 +151,17 @@ const cardService = {
    */
   getCardById: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.get<Card>(`/api/cards/${cardId}`)
-      return response.data
+      // Simulate API delay
+      await delay(500)
+
+      // Find card by ID
+      const card = mockCards.find((card) => card.id === cardId)
+
+      if (!card) {
+        throw new Error("Card not found")
+      }
+
+      return card
     } catch (error) {
       console.error(`Get card ${cardId} error:`, error)
       throw error
@@ -119,8 +175,17 @@ const cardService = {
    */
   getPublicCard: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.get<Card>(`/api/cards/public/${cardId}`)
-      return response.data
+      // Simulate API delay
+      await delay(500)
+
+      // Find card by ID
+      const card = mockCards.find((card) => card.id === cardId)
+
+      if (!card) {
+        throw new Error("Card not found")
+      }
+
+      return card
     } catch (error) {
       console.error(`Get public card ${cardId} error:`, error)
       throw error
@@ -135,8 +200,23 @@ const cardService = {
    */
   updateCard: async (cardId: string, payload: UpdateCardPayload): Promise<Card> => {
     try {
-      const response = await api.patch<Card>(`/api/cards/${cardId}`, payload)
-      return response.data
+      // Simulate API delay
+      await delay(1000)
+
+      // Find card by ID
+      const card = mockCards.find((card) => card.id === cardId)
+
+      if (!card) {
+        throw new Error("Card not found")
+      }
+
+      // Update card
+      const updatedCard = { ...card, ...payload, updatedAt: new Date().toISOString() }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the updated card
+
+      return updatedCard
     } catch (error) {
       console.error(`Update card ${cardId} error:`, error)
       throw error
@@ -150,8 +230,23 @@ const cardService = {
    */
   togglePrimeStatus: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.patch<Card>(`/api/cards/${cardId}/toggle-prime`)
-      return response.data
+      // Simulate API delay
+      await delay(800)
+
+      // Find card by ID
+      const card = mockCards.find((card) => card.id === cardId)
+
+      if (!card) {
+        throw new Error("Card not found")
+      }
+
+      // Toggle prime status
+      const updatedCard = { ...card, isPrime: !card.isPrime, updatedAt: new Date().toISOString() }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the updated card
+
+      return updatedCard
     } catch (error) {
       console.error(`Toggle prime status error:`, error)
       throw error
@@ -165,8 +260,23 @@ const cardService = {
    */
   toggleWalletStatus: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.patch<Card>(`/api/cards/${cardId}/toggle-wallet`)
-      return response.data
+      // Simulate API delay
+      await delay(800)
+
+      // Find card by ID
+      const card = mockCards.find((card) => card.id === cardId)
+
+      if (!card) {
+        throw new Error("Card not found")
+      }
+
+      // Toggle wallet status
+      const updatedCard = { ...card, isInWallet: !card.isInWallet, updatedAt: new Date().toISOString() }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the updated card
+
+      return updatedCard
     } catch (error) {
       console.error(`Toggle wallet status error:`, error)
       throw error
@@ -180,7 +290,13 @@ const cardService = {
    */
   deleteCard: async (cardId: string): Promise<void> => {
     try {
-      await api.delete(`/api/cards/${cardId}`)
+      // Simulate API delay
+      await delay(1000)
+
+      // In a real app, we would delete the card from the database
+      // For demo purposes, we'll just return
+
+      return
     } catch (error) {
       console.error(`Delete card ${cardId} error:`, error)
       throw error

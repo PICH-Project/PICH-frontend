@@ -19,7 +19,7 @@ export const fetchCards = createAsyncThunk("cards/fetchCards", async (_, { rejec
   try {
     return await cardService.getAllCards()
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Failed to fetch cards. Please try again."
+    const errorMessage = error.message || "Failed to fetch cards. Please try again."
     return rejectWithValue(errorMessage)
   }
 })
@@ -30,7 +30,7 @@ export const createCard = createAsyncThunk(
     try {
       return await cardService.createCard(cardData)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to create card. Please try again."
+      const errorMessage = error.message || "Failed to create card. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -42,7 +42,7 @@ export const updateCard = createAsyncThunk(
     try {
       return await cardService.updateCard(id, updates)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to update card. Please try again."
+      const errorMessage = error.message || "Failed to update card. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -54,7 +54,7 @@ export const togglePrimeStatus = createAsyncThunk(
     try {
       return await cardService.togglePrimeStatus(id)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to toggle prime status. Please try again."
+      const errorMessage = error.message || "Failed to toggle prime status. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -66,7 +66,7 @@ export const toggleWalletStatus = createAsyncThunk(
     try {
       return await cardService.toggleWalletStatus(id)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to toggle wallet status. Please try again."
+      const errorMessage = error.message || "Failed to toggle wallet status. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -77,7 +77,7 @@ export const deleteCard = createAsyncThunk("cards/deleteCard", async (id: string
     await cardService.deleteCard(id)
     return id
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Failed to delete card. Please try again."
+    const errorMessage = error.message || "Failed to delete card. Please try again."
     return rejectWithValue(errorMessage)
   }
 })

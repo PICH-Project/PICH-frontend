@@ -1,4 +1,5 @@
-import api from "./api"
+import { mockUsers } from "../utils/mockData"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export interface RegisterPayload {
   email: string
@@ -38,6 +39,9 @@ export interface UserProfile {
   updatedAt: string
 }
 
+// Mock delay function to simulate network requests
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 /**
  * Service for handling authentication-related API calls
  */
@@ -49,8 +53,35 @@ const authService = {
    */
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>("/api/auth/register", payload)
-      return response.data
+      // Simulate API delay
+      await delay(1000)
+
+      // Check if email already exists
+      if (mockUsers.some((user) => user.email === payload.email)) {
+        throw new Error("Email already in use")
+      }
+
+      // Create a new user
+      const newUser: UserProfile = {
+        id: `user-${Date.now()}`,
+        email: payload.email,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        nickname: payload.nickname,
+        subscriptionPlan: "basic",
+        isActive: true,
+        tokenBalance: 100,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      // Generate a mock token
+      const token = `mock-token-${Date.now()}`
+
+      return {
+        user: newUser,
+        accessToken: token,
+      }
     } catch (error) {
       console.error("Registration error:", error)
       throw error
@@ -64,8 +95,26 @@ const authService = {
    */
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>("/api/auth/login", payload)
-      return response.data
+      // Simulate API delay
+      await delay(1000)
+
+      // Find user by email
+      const user = mockUsers.find((user) => user.email === payload.email)
+
+      if (!user) {
+        throw new Error("User not found")
+      }
+
+      // In a real app, we would check the password here
+      // For demo purposes, we'll accept any password
+
+      // Generate a mock token
+      const token = `mock-token-${Date.now()}`
+
+      return {
+        user,
+        accessToken: token,
+      }
     } catch (error) {
       console.error("Login error:", error)
       throw error
@@ -78,8 +127,17 @@ const authService = {
    */
   getUserProfile: async (): Promise<UserProfile> => {
     try {
-      const response = await api.get<UserProfile>("/api/users/profile")
-      return response.data
+      // Simulate API delay
+      await delay(500)
+
+      // Get the stored user from AsyncStorage
+      const userJson = await AsyncStorage.getItem("auth_user")
+
+      if (!userJson) {
+        throw new Error("User not found")
+      }
+
+      return JSON.parse(userJson)
     } catch (error) {
       console.error("Get user profile error:", error)
       throw error

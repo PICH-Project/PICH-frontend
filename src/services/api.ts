@@ -5,7 +5,7 @@ import { logout } from "../store/slices/authSlice"
 
 // Create an axios instance with default config
 const api = axios.create({
-  baseURL: "http://[::1]:3000", // Replace with your actual API base URL
+  baseURL: "https://mock-api.pich.app", // This is a fake URL since we're using mocks
   headers: {
     "Content-Type": "application/json",
   },

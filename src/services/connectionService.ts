@@ -1,4 +1,5 @@
-import api from "./api"
+import { mockUsers, generateMockConnections } from "../utils/mockData"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import type { UserProfile } from "./authService"
 
 export interface Connection {
@@ -25,6 +26,21 @@ export interface UpdateNotesPayload {
   notes: string
 }
 
+// Mock delay function to simulate network requests
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Function to get user ID from AsyncStorage
+const getUserId = async (): Promise<string> => {
+  const userJson = await AsyncStorage.getItem("auth_user")
+  if (!userJson) {
+    throw new Error("User not authenticated")
+  }
+  return JSON.parse(userJson).id
+}
+
+// Generate mock connections
+const mockConnections = generateMockConnections()
+
 /**
  * Service for handling connection-related API calls
  */
@@ -36,8 +52,43 @@ const connectionService = {
    */
   createConnection: async (payload: CreateConnectionPayload): Promise<Connection> => {
     try {
-      const response = await api.post<Connection>("/api/connections", payload)
-      return response.data
+      // Simulate API delay
+      await delay(1500)
+
+      const userId = await getUserId()
+
+      // Find the scanned user
+      const scannedUser = mockUsers.find((user) => user.id === payload.scannedUserId)
+
+      if (!scannedUser) {
+        throw new Error("User not found")
+      }
+
+      // Find the current user
+      const currentUser = mockUsers.find((user) => user.id === userId)
+
+      if (!currentUser) {
+        throw new Error("Current user not found")
+      }
+
+      // Create a new connection
+      const newConnection: Connection = {
+        id: `conn-${Date.now()}`,
+        user1Id: userId,
+        user2Id: payload.scannedUserId,
+        user1FavoritedUser2: false,
+        user2FavoritedUser1: false,
+        connectionDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        user1: currentUser,
+        user2: scannedUser,
+      }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the new connection
+
+      return newConnection
     } catch (error) {
       console.error("Create connection error:", error)
       throw error
@@ -50,8 +101,15 @@ const connectionService = {
    */
   getAllConnections: async (): Promise<Connection[]> => {
     try {
-      const response = await api.get<Connection[]>("/api/connections")
-      return response.data
+      // Simulate API delay
+      await delay(1000)
+
+      const userId = await getUserId()
+
+      // Filter connections by user ID
+      // For demo purposes, we'll return all mock connections
+      // In a real app, we would filter by the current user's ID
+      return mockConnections
     } catch (error) {
       console.error("Get all connections error:", error)
       throw error
@@ -64,8 +122,20 @@ const connectionService = {
    */
   getFriends: async (): Promise<UserProfile[]> => {
     try {
-      const response = await api.get<UserProfile[]>("/api/connections/friends")
-      return response.data
+      // Simulate API delay
+      await delay(800)
+
+      const userId = await getUserId()
+
+      // Get all connections for the current user
+      const userConnections = mockConnections.filter((conn) => conn.user1Id === userId || conn.user2Id === userId)
+
+      // Extract friend profiles
+      const friends = userConnections.map((conn) => {
+        return conn.user1Id === userId ? conn.user2 : conn.user1
+      })
+
+      return friends
     } catch (error) {
       console.error("Get friends error:", error)
       throw error
@@ -79,8 +149,17 @@ const connectionService = {
    */
   getConnectionById: async (connectionId: string): Promise<Connection> => {
     try {
-      const response = await api.get<Connection>(`/api/connections/${connectionId}`)
-      return response.data
+      // Simulate API delay
+      await delay(500)
+
+      // Find connection by ID
+      const connection = mockConnections.find((conn) => conn.id === connectionId)
+
+      if (!connection) {
+        throw new Error("Connection not found")
+      }
+
+      return connection
     } catch (error) {
       console.error(`Get connection ${connectionId} error:`, error)
       throw error
@@ -94,8 +173,39 @@ const connectionService = {
    */
   toggleFavorite: async (connectionId: string): Promise<Connection> => {
     try {
-      const response = await api.patch<Connection>(`/api/connections/${connectionId}/favorite`)
-      return response.data
+      // Simulate API delay
+      await delay(800)
+
+      const userId = await getUserId()
+
+      // Find connection by ID
+      const connection = mockConnections.find((conn) => conn.id === connectionId)
+
+      if (!connection) {
+        throw new Error("Connection not found")
+      }
+
+      // Toggle favorite status based on which user is toggling
+      let updatedConnection: Connection
+
+      if (connection.user1Id === userId) {
+        updatedConnection = {
+          ...connection,
+          user1FavoritedUser2: !connection.user1FavoritedUser2,
+          updatedAt: new Date().toISOString(),
+        }
+      } else {
+        updatedConnection = {
+          ...connection,
+          user2FavoritedUser1: !connection.user2FavoritedUser1,
+          updatedAt: new Date().toISOString(),
+        }
+      }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the updated connection
+
+      return updatedConnection
     } catch (error) {
       console.error(`Toggle favorite error:`, error)
       throw error
@@ -110,8 +220,39 @@ const connectionService = {
    */
   updateNotes: async (connectionId: string, payload: UpdateNotesPayload): Promise<Connection> => {
     try {
-      const response = await api.patch<Connection>(`/api/connections/${connectionId}/notes`, payload)
-      return response.data
+      // Simulate API delay
+      await delay(1000)
+
+      const userId = await getUserId()
+
+      // Find connection by ID
+      const connection = mockConnections.find((conn) => conn.id === connectionId)
+
+      if (!connection) {
+        throw new Error("Connection not found")
+      }
+
+      // Update notes based on which user is updating
+      let updatedConnection: Connection
+
+      if (connection.user1Id === userId) {
+        updatedConnection = {
+          ...connection,
+          user1Notes: payload.notes,
+          updatedAt: new Date().toISOString(),
+        }
+      } else {
+        updatedConnection = {
+          ...connection,
+          user2Notes: payload.notes,
+          updatedAt: new Date().toISOString(),
+        }
+      }
+
+      // In a real app, we would save this to a database
+      // For demo purposes, we'll just return the updated connection
+
+      return updatedConnection
     } catch (error) {
       console.error(`Update notes error:`, error)
       throw error
@@ -125,7 +266,13 @@ const connectionService = {
    */
   deleteConnection: async (connectionId: string): Promise<void> => {
     try {
-      await api.delete(`/api/connections/${connectionId}`)
+      // Simulate API delay
+      await delay(1000)
+
+      // In a real app, we would delete the connection from the database
+      // For demo purposes, we'll just return
+
+      return
     } catch (error) {
       console.error(`Delete connection ${connectionId} error:`, error)
       throw error

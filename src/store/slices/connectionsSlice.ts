@@ -22,7 +22,7 @@ export const fetchConnections = createAsyncThunk("connections/fetchConnections",
   try {
     return await connectionService.getAllConnections()
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Failed to fetch connections. Please try again."
+    const errorMessage = error.message || "Failed to fetch connections. Please try again."
     return rejectWithValue(errorMessage)
   }
 })
@@ -31,7 +31,7 @@ export const fetchFriends = createAsyncThunk("connections/fetchFriends", async (
   try {
     return await connectionService.getFriends()
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Failed to fetch friends. Please try again."
+    const errorMessage = error.message || "Failed to fetch friends. Please try again."
     return rejectWithValue(errorMessage)
   }
 })
@@ -42,7 +42,7 @@ export const createConnection = createAsyncThunk(
     try {
       return await connectionService.createConnection(payload)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to create connection. Please try again."
+      const errorMessage = error.message || "Failed to create connection. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -54,7 +54,7 @@ export const toggleFavorite = createAsyncThunk(
     try {
       return await connectionService.toggleFavorite(connectionId)
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to toggle favorite. Please try again."
+      const errorMessage = error.message || "Failed to toggle favorite. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -66,7 +66,7 @@ export const updateNotes = createAsyncThunk(
     try {
       return await connectionService.updateNotes(connectionId, { notes })
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to update notes. Please try again."
+      const errorMessage = error.message || "Failed to update notes. Please try again."
       return rejectWithValue(errorMessage)
     }
   },
@@ -79,7 +79,7 @@ export const deleteConnection = createAsyncThunk(
       await connectionService.deleteConnection(connectionId)
       return connectionId
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to delete connection. Please try again."
+      const errorMessage = error.message || "Failed to delete connection. Please try again."
       return rejectWithValue(errorMessage)
     }
   },

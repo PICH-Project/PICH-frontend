@@ -49,7 +49,7 @@ export const login = createAsyncThunk("auth/login", async (credentials: LoginPay
       user: response.user,
     }
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials."
+    const errorMessage = error.message || "Login failed. Please check your credentials."
     return rejectWithValue(errorMessage)
   }
 })
@@ -67,7 +67,7 @@ export const register = createAsyncThunk("auth/register", async (userData: Regis
       user: response.user,
     }
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Registration failed. Please try again."
+    const errorMessage = error.message || "Registration failed. Please try again."
     return rejectWithValue(errorMessage)
   }
 })
@@ -81,7 +81,7 @@ export const fetchUserProfile = createAsyncThunk("auth/fetchUserProfile", async 
 
     return user
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Failed to fetch user profile."
+    const errorMessage = error.message || "Failed to fetch user profile."
     return rejectWithValue(errorMessage)
   }
 })
