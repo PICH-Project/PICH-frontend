@@ -5,8 +5,11 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, Dimensio
 import { Camera, CameraView } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation, useIsFocused } from "@react-navigation/native"
+import { useDispatch } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { createConnection } from "../../store/slices/connectionsSlice"
+import type { AppDispatch } from "../../store"
 
 const { width, height } = Dimensions.get("window")
 const SCAN_AREA_SIZE = width * 0.5
@@ -18,6 +21,7 @@ const ScanScreen = () => {
   const [scanned, setScanned] = useState(false)
   const tabBarHeight = useTabBarHeight()
   const isFocused = useIsFocused()
+  const dispatch = useDispatch<AppDispatch>()
 
   useEffect(() => {
     const getBarCodeScannerPermissions = async () => {
@@ -28,27 +32,57 @@ const ScanScreen = () => {
     getBarCodeScannerPermissions()
   }, [])
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     setScanned(true)
-    Alert.alert(
-      "QR Code Scanned",
-      `Card data: ${data}`,
-      [
-        {
-          text: "Add to Stack",
-          onPress: () => {
-            // Here you would process the QR code data and add the card to the stack
-            console.log("Adding card to stack:", data)
-            navigation.navigate("Stack" as never)
+
+    try {
+      // Try to parse the QR code data
+      const qrData = JSON.parse(data)
+
+      // Check if the QR code contains a user ID
+      if (qrData && qrData.userId) {
+        Alert.alert(
+          "Connection Request",
+          "Would you like to connect with this user?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+              onPress: () => setScanned(false),
+            },
+            {
+              text: "Connect",
+              onPress: async () => {
+                try {
+                  // Create a connection with the scanned user
+                  await dispatch(createConnection({ scannedUserId: qrData.userId })).unwrap()
+                  Alert.alert("Success", "Connection request sent successfully!")
+                  navigation.navigate("Stack" as never)
+                } catch (error: any) {
+                  Alert.alert("Error", error.message || "Failed to create connection. Please try again.")
+                  setScanned(false)
+                }
+              },
+            },
+          ],
+          { cancelable: false },
+        )
+      } else {
+        Alert.alert("Invalid QR Code", "This QR code doesn't contain valid connection information.", [
+          {
+            text: "OK",
+            onPress: () => setScanned(false),
           },
-        },
+        ])
+      }
+    } catch (error) {
+      Alert.alert("Invalid QR Code", "This QR code doesn't contain valid connection information.", [
         {
-          text: "Scan Again",
+          text: "OK",
           onPress: () => setScanned(false),
         },
-      ],
-      { cancelable: false },
-    )
+      ])
+    }
   }
 
   if (hasPermission === null) {
@@ -78,7 +112,7 @@ const ScanScreen = () => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#6C63FF" />
         </TouchableOpacity>
-        <Text style={styles.title}>Scan</Text>
+        <Text style={styles.title}>Scan to Connect</Text>
         <TouchableOpacity style={styles.menuButton}>
           <Ionicons name="menu" size={24} color="#1E1B4B" />
         </TouchableOpacity>

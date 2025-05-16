@@ -4,6 +4,7 @@ import { persistStore, persistReducer } from "redux-persist"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import authReducer from "./slices/authSlice"
 import cardsReducer from "./slices/cardsSlice"
+import connectionsReducer from "./slices/connectionsSlice"
 import settingsReducer from "./slices/settingsSlice"
 import userReducer from "./slices/userSlice"
 
@@ -16,6 +17,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: authReducer,
   cards: cardsReducer,
+  connections: connectionsReducer,
   settings: settingsReducer,
   user: userReducer,
 })

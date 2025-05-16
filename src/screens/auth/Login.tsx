@@ -16,19 +16,16 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
-import { useDispatch, useSelector } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
 import Button from "../../components/common/Button"
 import SocialButton from "../../components/auth/SocialButton"
 import AuthTabs from "../../components/auth/AuthTabs"
-import { login, clearError } from "../../store/slices/authSlice"
-import type { RootState, AppDispatch } from "../../store"
+import { useAuth } from "../../contexts/AuthContext"
 
 const LoginScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
-  const dispatch = useDispatch<AppDispatch>()
-  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const { login, error, loading, clearAuthError } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -45,25 +42,17 @@ const LoginScreen = () => {
   // Clear Redux errors when component unmounts
   useEffect(() => {
     return () => {
-      dispatch(clearError())
+      clearAuthError()
     }
-  }, [dispatch])
+  }, [clearAuthError])
 
-  // Navigate to main app if authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      // The navigation in AppNavigator will handle the redirect
-      console.log("User authenticated, navigating to main app")
-    }
-  }, [isAuthenticated, navigation])
-
-  // Show error alert when Redux error occurs
+  // Show error alert when auth error occurs
   useEffect(() => {
     if (error) {
       Alert.alert("Login Error", error)
-      dispatch(clearError())
+      clearAuthError()
     }
-  }, [error, dispatch])
+  }, [error, clearAuthError])
 
   const validateInputs = () => {
     if (!email.trim()) {
@@ -91,7 +80,12 @@ const LoginScreen = () => {
       return
     }
 
-    dispatch(login({ email, password }))
+    try {
+      await login({ email, password })
+    } catch (err) {
+      // Error is handled by the auth context and shown in the useEffect above
+      console.error("Login failed:", err)
+    }
   }
 
   const handleGoogleLogin = () => {

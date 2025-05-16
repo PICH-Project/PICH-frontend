@@ -6,6 +6,7 @@ import StackScreen from "../screens/main/Stack"
 import CardDetail from "../screens/main/CardDetail"
 import ScanScreen from "../screens/main/Scan"
 import ActionsScreen from "../screens/main/Actions"
+import ShareScreen from "../screens/main/Share"
 import SettingsNavigator from "./SettingsNavigator"
 import { View, Text, StyleSheet, Platform, Dimensions, TouchableOpacity } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -13,7 +14,6 @@ import type { TabParamList, StackParamList } from "./types"
 
 // Placeholder screens
 const AccountScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
-const ShareScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
 
 const Tab = createBottomTabNavigator<TabParamList>()
 const Stack = createNativeStackNavigator<StackParamList>()

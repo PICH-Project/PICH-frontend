@@ -16,21 +16,21 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
-import { useDispatch, useSelector } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
 import Button from "../../components/common/Button"
 import SocialButton from "../../components/auth/SocialButton"
 import AuthTabs from "../../components/auth/AuthTabs"
-import { signup, clearError } from "../../store/slices/authSlice"
-import type { RootState, AppDispatch } from "../../store"
+import { useAuth } from "../../contexts/AuthContext"
 
 const SignupScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
-  const dispatch = useDispatch<AppDispatch>()
-  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const { register, error, loading, clearAuthError } = useAuth()
 
   const [email, setEmail] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [nickname, setNickname] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -42,34 +42,36 @@ const SignupScreen = () => {
     if (validationError) {
       setValidationError(null)
     }
-  }, [email, password, confirmPassword])
+  }, [email, firstName, lastName, password, confirmPassword])
 
   // Clear Redux errors when component unmounts
   useEffect(() => {
     return () => {
-      dispatch(clearError())
+      clearAuthError()
     }
-  }, [dispatch])
+  }, [clearAuthError])
 
-  // Navigate to main app if authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      // The navigation in AppNavigator will handle the redirect
-      console.log("User authenticated, navigating to main app")
-    }
-  }, [isAuthenticated, navigation])
-
-  // Show error alert when Redux error occurs
+  // Show error alert when auth error occurs
   useEffect(() => {
     if (error) {
       Alert.alert("Signup Error", error)
-      dispatch(clearError())
+      clearAuthError()
     }
-  }, [error, dispatch])
+  }, [error, clearAuthError])
 
   const validateInputs = () => {
     if (!email.trim()) {
       setValidationError("Email is required")
+      return false
+    }
+
+    if (!firstName.trim()) {
+      setValidationError("First name is required")
+      return false
+    }
+
+    if (!lastName.trim()) {
+      setValidationError("Last name is required")
       return false
     }
 
@@ -109,7 +111,18 @@ const SignupScreen = () => {
       return
     }
 
-    dispatch(signup({ email, password }))
+    try {
+      await register({
+        email,
+        firstName,
+        lastName,
+        nickname: nickname || undefined,
+        password,
+      })
+    } catch (err) {
+      // Error is handled by the auth context and shown in the useEffect above
+      console.error("Signup failed:", err)
+    }
   }
 
   const handleGoogleSignup = () => {
@@ -212,6 +225,65 @@ const SignupScreen = () => {
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+            />
+          </View>
+
+          <View style={styles.inputRow}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    borderColor: validationError && !firstName.trim() ? colors.error : colors.border,
+                    fontFamily: typography.fontFamily.regular,
+                    fontSize: typography.fontSize.md,
+                  },
+                ]}
+                placeholder="First Name"
+                placeholderTextColor={colors.textSecondary}
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    borderColor: validationError && !lastName.trim() ? colors.error : colors.border,
+                    fontFamily: typography.fontFamily.regular,
+                    fontSize: typography.fontSize.md,
+                  },
+                ]}
+                placeholder="Last Name"
+                placeholderTextColor={colors.textSecondary}
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: colors.border,
+                  fontFamily: typography.fontFamily.regular,
+                  fontSize: typography.fontSize.md,
+                },
+              ]}
+              placeholder="Nickname (optional)"
+              placeholderTextColor={colors.textSecondary}
+              value={nickname}
+              onChangeText={setNickname}
+              autoCapitalize="words"
             />
           </View>
 
@@ -357,6 +429,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 16,
     position: "relative",
+  },
+  inputRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   input: {
     height: 56,
