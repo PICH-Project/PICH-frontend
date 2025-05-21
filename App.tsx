@@ -1,3 +1,9 @@
+import 'fast-text-encoding';
+import 'react-native-get-random-values';
+import {Buffer} from 'buffer';
+global.Buffer = Buffer;
+import '@ethersproject/shims';
+
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { StatusBar } from "expo-status-bar"
 import { NavigationContainer } from "@react-navigation/native"
