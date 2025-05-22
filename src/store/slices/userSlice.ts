@@ -1,24 +1,28 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import userService from "../../services/userService"
+import type { UpdateUserPayload } from "../../services/userService"
+import { logout } from "./authSlice"
+import type { RootState } from ".."
 
+// Update the UserProfile interface to match the backend entity structure
 export interface UserProfile {
   id: string
+  email: string
   firstName: string
   lastName: string
-  nickname: string
-  email: string
-  phone: string
+  nickname?: string
+  phone?: string
   avatar?: string
   gender?: string
   birthDate?: string
-  createdAt: number
-  updatedAt: number
-  subscription: {
-    plan: "basic" | "medium" | "premium"
-    expiresAt: number
-    isActive: boolean
-  }
+  subscriptionPlan: string
+  subscriptionExpiresAt?: string
+  isActive: boolean
   walletAddress?: string
   tokenBalance: number
+  mainCardId?: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface UserState {
@@ -33,65 +37,113 @@ const initialState: UserState = {
   error: null,
 }
 
-export const fetchUserProfile = createAsyncThunk("user/fetchUserProfile", async (_, { rejectWithValue }) => {
+// Enhance the fetchUserProfile thunk to handle empty responses better
+export const fetchUserProfile = createAsyncThunk("user/fetchUserProfile", async (_, { rejectWithValue, getState }) => {
   try {
-    // In a real app, this would fetch from an API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Log the current auth state
+    const state = getState() as RootState
+    console.log("Auth state before fetching profile:", {
+      isAuthenticated: state.auth.isAuthenticated,
+      hasToken: !!state.auth.token,
+    })
 
-    // Return mock user profile
-    return {
-      id: "user123",
-      firstName: "John",
-      lastName: "Doe",
-      nickname: "Johny",
-      email: "john.doe@example.com",
-      phone: "+1 876 765 56 54",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      gender: "M",
-      birthDate: "24.02.1986",
-      createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
-      updatedAt: Date.now(),
-      subscription: {
-        plan: "basic",
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days from now
-        isActive: true,
-      },
-      walletAddress: "sol:abc123def456",
-      tokenBalance: 100,
-    } as UserProfile
-  } catch (error) {
-    return rejectWithValue("Failed to fetch user profile. Please try again.")
+    console.log("Fetching user profile from API...")
+    const profile = await userService.getCurrentUserProfile()
+
+    // Validate the profile data
+    if (!profile || !profile.id) {
+      console.error("API returned invalid user profile data:", profile)
+      return rejectWithValue("Invalid user profile data received from API")
+    }
+
+    console.log("User profile fetched successfully:", profile)
+    return profile
+  } catch (error: any) {
+    console.error("Error fetching user profile:", error)
+    // Add more detailed error logging
+    if (error.response) {
+      console.error("API Error Response:", error.response.data)
+      console.error("API Error Status:", error.response.status)
+    }
+    const errorMessage = error.response?.data?.message || "Failed to fetch user profile. Please try again."
+    return rejectWithValue(errorMessage)
   }
 })
 
+// Get a user by ID using the userService
+export const getUserById = createAsyncThunk("user/getUserById", async (userId: string, { rejectWithValue }) => {
+  try {
+    console.log(`Fetching user with ID ${userId} from API...`)
+    const user = await userService.getUserById(userId)
+    console.log("User fetched:", user)
+    return user
+  } catch (error: any) {
+    console.error(`Error fetching user with ID ${userId}:`, error)
+    const errorMessage = error.response?.data?.message || `Failed to fetch user with ID ${userId}. Please try again.`
+    return rejectWithValue(errorMessage)
+  }
+})
+
+// Update the updateUserProfile thunk to use the correct payload structure
 export const updateUserProfile = createAsyncThunk(
   "user/updateUserProfile",
-  async (updates: Partial<UserProfile>, { rejectWithValue }) => {
+  async ({ id, ...updates }: { id: string } & UpdateUserPayload, { rejectWithValue }) => {
     try {
-      // In a real app, this would update via API
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      console.log(`Updating user with ID ${id}...`, updates)
 
-      return { ...updates, updatedAt: Date.now() }
-    } catch (error) {
-      return rejectWithValue("Failed to update profile. Please try again.")
+      // Remove email from updates if it exists (API doesn't want it)
+      const { email, ...validUpdates } = updates as any
+
+      const updatedUser = await userService.updateUser(id, validUpdates)
+      console.log("User updated:", updatedUser)
+      return updatedUser
+    } catch (error: any) {
+      console.error("Error updating user profile:", error)
+      const errorMessage = error.response?.data?.message || "Failed to update profile. Please try again."
+      return rejectWithValue(errorMessage)
     }
   },
 )
 
+// Set a card as the user's main card using the userService
+export const setMainCard = createAsyncThunk(
+  "user/setMainCard",
+  async ({ userId, cardId }: { userId: string; cardId: string }, { rejectWithValue }) => {
+    try {
+      console.log(`Setting card ${cardId} as main card for user ${userId}...`)
+      const updatedUser = await userService.setMainCard(userId, cardId)
+      console.log("Main card set:", updatedUser)
+      return updatedUser
+    } catch (error: any) {
+      console.error("Error setting main card:", error)
+      const errorMessage = error.response?.data?.message || "Failed to set main card. Please try again."
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Update the upgradeSubscription thunk to use the correct field names
 export const upgradeSubscription = createAsyncThunk(
   "user/upgradeSubscription",
-  async (plan: "basic" | "medium" | "premium", { rejectWithValue }) => {
+  async ({ userId, plan }: { userId: string; plan: "basic" | "medium" | "premium" }, { rejectWithValue }) => {
     try {
-      // In a real app, this would handle payment and subscription upgrade
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      console.log(`Upgrading subscription for user ${userId} to ${plan}...`)
 
-      return {
-        plan,
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days from now
+      // Create a subscription update payload with the correct field name
+      const subscriptionData: UpdateUserPayload = {
+        subscriptionPlan: plan,
         isActive: true,
       }
-    } catch (error) {
-      return rejectWithValue("Failed to upgrade subscription. Please try again.")
+
+      // Update the user with the new subscription data
+      const updatedUser = await userService.updateUser(userId, subscriptionData)
+      console.log("Subscription upgraded:", updatedUser)
+
+      return updatedUser
+    } catch (error: any) {
+      console.error("Error upgrading subscription:", error)
+      const errorMessage = error.response?.data?.message || "Failed to upgrade subscription. Please try again."
+      return rejectWithValue(errorMessage)
     }
   },
 )
@@ -123,18 +175,47 @@ const userSlice = createSlice({
         state.error = action.payload as string
       })
 
+      // Get user by ID
+      .addCase(getUserById.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getUserById.fulfilled, (state, action) => {
+        // Only update the profile if it's the current user
+        if (state.profile && state.profile.id === action.payload.id) {
+          state.profile = action.payload
+        }
+        state.loading = false
+      })
+      .addCase(getUserById.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
       // Update user profile
       .addCase(updateUserProfile.pending, (state) => {
         state.loading = true
         state.error = null
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
-        if (state.profile) {
-          state.profile = { ...state.profile, ...action.payload }
-        }
+        state.profile = action.payload
         state.loading = false
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+      // Set main card
+      .addCase(setMainCard.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(setMainCard.fulfilled, (state, action) => {
+        state.profile = action.payload
+        state.loading = false
+      })
+      .addCase(setMainCard.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
       })
@@ -145,14 +226,22 @@ const userSlice = createSlice({
         state.error = null
       })
       .addCase(upgradeSubscription.fulfilled, (state, action) => {
-        if (state.profile) {
-          state.profile.subscription = action.payload
-        }
+        state.profile = action.payload
         state.loading = false
       })
       .addCase(upgradeSubscription.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
+      })
+      // Add a new action to reset the user state when logging out
+      // This should be added to the extraReducers section
+
+      // Add this case to the extraReducers builder
+      .addCase(logout.fulfilled, (state) => {
+        // Reset the user state when logging out
+        state.profile = null
+        state.loading = false
+        state.error = null
       })
   },
 })

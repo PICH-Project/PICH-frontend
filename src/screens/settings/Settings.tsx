@@ -1,16 +1,44 @@
 "use client"
 
-import React from "react"
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Image } from "react-native"
+import React, { useEffect, useState } from "react"
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+} from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
 import { useTabBarHeight } from "@/hooks/useTabBarHeight"
+import { useAuth } from "../../hooks/useAuth"
+import { useDispatch } from "react-redux"
+import { fetchUserProfile } from "@/store/slices/authSlice"
+import type { AppDispatch } from "@/store"
 
 const SettingsScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
+  const { user } = useAuth()
+  const dispatch = useDispatch<AppDispatch>()
+  const [loading, setLoading] = useState(false)
+  const tabBarHeight = useTabBarHeight()
+
+  // Fetch user profile if not already loaded
+  useEffect(() => {
+    if (!user && !loading) {
+      setLoading(true)
+      dispatch(fetchUserProfile())
+        .unwrap()
+        .then(() => setLoading(false))
+        .catch(() => setLoading(false))
+    }
+  }, [user, dispatch, loading])
 
   const menuItems = [
     {
@@ -18,7 +46,7 @@ const SettingsScreen = () => {
       title: "Account Settings",
       icon: "person-outline",
       iconColor: colors.accent,
-      screen: "AccountSettings",
+      screen: "AccountSettings", // Make sure this matches the screen name in SettingsNavigator
     },
     {
       id: "app",
@@ -50,8 +78,34 @@ const SettingsScreen = () => {
     },
   ]
 
+  // Display a loading indicator while fetching user data
+  if (loading && !user) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Format the display name based on available user data
+  const getDisplayName = () => {
+    if (!user) return "User"
+
+    return `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User"
+  }
+
+  // Get the nickname or a fallback
+  const getNickname = () => {
+    if (!user) return ""
+
+    return user.nickname || ""
+  }
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background, marginBottom: useTabBarHeight() }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text
           style={[
@@ -72,7 +126,7 @@ const SettingsScreen = () => {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <Avatar uri="https://randomuser.me/api/portraits/men/32.jpg" size={80} />
+          <Avatar uri={user?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={80} />
           <View style={styles.profileInfo}>
             <Text
               style={[
@@ -84,20 +138,22 @@ const SettingsScreen = () => {
                 },
               ]}
             >
-              John Doe
+              {getDisplayName()}
             </Text>
-            <Text
-              style={[
-                styles.profileUsername,
-                {
-                  color: colors.textSecondary,
-                  fontFamily: typography.fontFamily.regular,
-                  fontSize: typography.fontSize.lg,
-                },
-              ]}
-            >
-              Johny
-            </Text>
+            {getNickname() ? (
+              <Text
+                style={[
+                  styles.profileUsername,
+                  {
+                    color: colors.textSecondary,
+                    fontFamily: typography.fontFamily.regular,
+                    fontSize: typography.fontSize.lg,
+                  },
+                ]}
+              >
+                {getNickname()}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -177,9 +233,19 @@ const SettingsScreen = () => {
   )
 }
 
+// Add the loadingContainer and loadingText styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
   },
   header: {
     flexDirection: "row",

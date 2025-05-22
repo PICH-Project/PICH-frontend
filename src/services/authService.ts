@@ -20,6 +20,7 @@ export interface AuthResponse {
   accessToken: string
 }
 
+// Update the UserProfile interface to match the backend entity structure
 export interface UserProfile {
   id: string
   email: string
@@ -51,7 +52,9 @@ const authService = {
    */
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
     try {
+      console.log("Registering user with data:", { ...payload, password: "***" })
       const response = await api.post<AuthResponse>("/auth/register", payload)
+      console.log("Registration response:", response.data)
 
       // Store the token in AsyncStorage for future requests
       if (response.data.accessToken) {
@@ -60,8 +63,8 @@ const authService = {
       }
 
       return response.data
-    } catch (error) {
-      console.error("Registration error:", error)
+    } catch (error: any) {
+      console.error("Registration error:", error.response?.data || error.message || error)
       throw error
     }
   },
@@ -94,6 +97,7 @@ const authService = {
    */
   getUserProfile: async (): Promise<UserProfile> => {
     try {
+      // Updated to use the correct endpoint from the API documentation
       const response = await api.get<UserProfile>("/users/profile")
       return response.data
     } catch (error) {

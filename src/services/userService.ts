@@ -1,6 +1,8 @@
 import api from "./api"
 import type { UserProfile } from "./authService"
+import axios from "axios"
 
+// Update the UpdateUserPayload interface to include subscription-related fields
 export interface UpdateUserPayload {
   email?: string
   firstName?: string
@@ -11,6 +13,9 @@ export interface UpdateUserPayload {
   gender?: string
   birthDate?: string
   password?: string
+  subscriptionPlan?: string
+  subscriptionExpiresAt?: string
+  isActive?: boolean
 }
 
 /**
@@ -23,10 +28,16 @@ const userService = {
    */
   getCurrentUserProfile: async (): Promise<UserProfile> => {
     try {
+      // Updated to use the correct endpoint from the API documentation
       const response = await api.get<UserProfile>("/users/profile")
       return response.data
     } catch (error) {
       console.error("Get current user profile error:", error)
+      // Add more detailed error logging
+      if (axios.isAxiosError(error)) {
+        console.error("API Error Response:", error.response?.data)
+        console.error("API Error Status:", error.response?.status)
+      }
       throw error
     }
   },
@@ -70,6 +81,7 @@ const userService = {
    */
   setMainCard: async (userId: string, cardId: string): Promise<UserProfile> => {
     try {
+      // Updated to use the correct endpoint from the API documentation
       const response = await api.patch<UserProfile>(`/users/${userId}/main-card/${cardId}`)
       return response.data
     } catch (error) {

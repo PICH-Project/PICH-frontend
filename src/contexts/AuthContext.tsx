@@ -13,6 +13,8 @@ import {
   clearError,
 } from "../store/slices/authSlice"
 import type { LoginPayload, RegisterPayload, UserProfile } from "../services/authService"
+// Add this import at the top of the file
+import { clearUserProfile as clearUserProfileAction } from "../store/slices/userSlice"
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -44,16 +46,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initialize()
   }, [dispatch])
 
+  // Update the login function to ensure user profile is fetched
   const login = async (credentials: LoginPayload) => {
-    await dispatch(loginAction(credentials)).unwrap()
+    try {
+      const result = await dispatch(loginAction(credentials)).unwrap()
+      console.log("Login successful:", result)
+
+      // Explicitly fetch the user profile after login
+      if (result && result.token) {
+        console.log("Fetching user profile after login")
+        await dispatch(fetchUserProfile())
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      throw error
+    }
   }
 
+  // Update the register function to ensure user profile is fetched
   const register = async (userData: RegisterPayload) => {
-    await dispatch(registerAction(userData)).unwrap()
+    try {
+      // Register the user
+      const result = await dispatch(registerAction(userData)).unwrap()
+      console.log("Registration successful:", result)
+
+      // Explicitly fetch the user profile after registration
+      if (result && result.token) {
+        console.log("Fetching user profile after registration")
+        await dispatch(fetchUserProfile())
+      }
+    } catch (error) {
+      console.error("Registration error:", error)
+      throw error
+    }
   }
 
+  // Update the logout function in AuthContext to clear user profile
   const logout = async () => {
-    await dispatch(logoutAction())
+    try {
+      // First dispatch the logout action
+      await dispatch(logoutAction())
+
+      // Explicitly clear the user profile from Redux store
+      dispatch(clearUserProfileAction())
+
+      console.log("Logout successful, user state cleared")
+    } catch (error) {
+      console.error("Error during logout:", error)
+    }
   }
 
   const refreshUserProfile = async () => {
