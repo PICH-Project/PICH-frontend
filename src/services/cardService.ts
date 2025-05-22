@@ -30,10 +30,12 @@ export interface CreateCardPayload {
   type: "BAC" | "PAC" | "VAC" | "CAC"
   name: string
   nickname: string
-  email?: string
+  avatar?: string
   phone?: string
-  bio?: string
+  email?: string
   social?: Record<string, string>
+  isPrime?: boolean
+  bio?: string
   location?: {
     country?: string
     city?: string
@@ -41,6 +43,7 @@ export interface CreateCardPayload {
     postalCode?: string
   }
   category?: "FAMILY" | "FRIENDS" | "WORK" | "OTHER"
+  blockchainId?: string
   isMainCard?: boolean
   isInWallet?: boolean
 }
@@ -49,10 +52,12 @@ export interface UpdateCardPayload {
   type?: "BAC" | "PAC" | "VAC" | "CAC"
   name?: string
   nickname?: string
-  email?: string
+  avatar?: string
   phone?: string
-  bio?: string
+  email?: string
   social?: Record<string, string>
+  isPrime?: boolean
+  bio?: string
   location?: {
     country?: string
     city?: string
@@ -60,6 +65,7 @@ export interface UpdateCardPayload {
     postalCode?: string
   }
   category?: "FAMILY" | "FRIENDS" | "WORK" | "OTHER"
+  blockchainId?: string
   isMainCard?: boolean
   isInWallet?: boolean
 }
@@ -75,7 +81,7 @@ const cardService = {
    */
   createCard: async (payload: CreateCardPayload): Promise<Card> => {
     try {
-      const response = await api.post<Card>("/api/cards", payload)
+      const response = await api.post<Card>("/cards", payload)
       return response.data
     } catch (error) {
       console.error("Create card error:", error)
@@ -89,7 +95,7 @@ const cardService = {
    */
   getAllCards: async (): Promise<Card[]> => {
     try {
-      const response = await api.get<Card[]>("/api/cards")
+      const response = await api.get<Card[]>("/cards")
       return response.data
     } catch (error) {
       console.error("Get all cards error:", error)
@@ -104,7 +110,7 @@ const cardService = {
    */
   getCardById: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.get<Card>(`/api/cards/${cardId}`)
+      const response = await api.get<Card>(`/cards/${cardId}`)
       return response.data
     } catch (error) {
       console.error(`Get card ${cardId} error:`, error)
@@ -119,7 +125,7 @@ const cardService = {
    */
   getPublicCard: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.get<Card>(`/api/cards/public/${cardId}`)
+      const response = await api.get<Card>(`/cards/public/${cardId}`)
       return response.data
     } catch (error) {
       console.error(`Get public card ${cardId} error:`, error)
@@ -135,7 +141,7 @@ const cardService = {
    */
   updateCard: async (cardId: string, payload: UpdateCardPayload): Promise<Card> => {
     try {
-      const response = await api.patch<Card>(`/api/cards/${cardId}`, payload)
+      const response = await api.patch<Card>(`/cards/${cardId}`, payload)
       return response.data
     } catch (error) {
       console.error(`Update card ${cardId} error:`, error)
@@ -150,7 +156,7 @@ const cardService = {
    */
   togglePrimeStatus: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.patch<Card>(`/api/cards/${cardId}/toggle-prime`)
+      const response = await api.patch<Card>(`/cards/${cardId}/toggle-prime`)
       return response.data
     } catch (error) {
       console.error(`Toggle prime status error:`, error)
@@ -165,7 +171,7 @@ const cardService = {
    */
   toggleWalletStatus: async (cardId: string): Promise<Card> => {
     try {
-      const response = await api.patch<Card>(`/api/cards/${cardId}/toggle-wallet`)
+      const response = await api.patch<Card>(`/cards/${cardId}/toggle-wallet`)
       return response.data
     } catch (error) {
       console.error(`Toggle wallet status error:`, error)
@@ -180,7 +186,7 @@ const cardService = {
    */
   deleteCard: async (cardId: string): Promise<void> => {
     try {
-      await api.delete(`/api/cards/${cardId}`)
+      await api.delete(`/cards/${cardId}`)
     } catch (error) {
       console.error(`Delete card ${cardId} error:`, error)
       throw error

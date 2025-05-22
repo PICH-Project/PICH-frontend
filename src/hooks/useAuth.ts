@@ -2,12 +2,12 @@
 
 import { useEffect } from "react"
 import { useSelector, useDispatch } from "react-redux"
-import { login, signup, logout, clearError } from "../store/slices/authSlice"
+import { login, register, logout, clearError } from "../store/slices/authSlice"
 import type { RootState, AppDispatch } from "../store"
 
 export function useAuth() {
   const dispatch = useDispatch<AppDispatch>()
-  const { isAuthenticated, token, loading, error } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, token, loading, error, user } = useSelector((state: RootState) => state.auth)
 
   // Clear error when component unmounts
   useEffect(() => {
@@ -23,7 +23,11 @@ export function useAuth() {
   }
 
   const signupUser = (email: string, password: string) => {
-    return dispatch(signup({ email, password }))
+    return dispatch(register({
+      email, password,
+      firstName: "",
+      lastName: ""
+    }))
   }
 
   const logoutUser = () => {
@@ -43,6 +47,7 @@ export function useAuth() {
     signup: signupUser,
     logout: logoutUser,
     clearError: clearAuthError,
+    user
   }
 }
 

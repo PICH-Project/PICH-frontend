@@ -5,7 +5,7 @@ import { logout } from "../store/slices/authSlice"
 
 // Create an axios instance with default config
 const api = axios.create({
-  baseURL: "http://[::1]:3000", // Replace with your actual API base URL
+  baseURL: "http://localhost:3000/api", // Replace with your actual API base URL
   headers: {
     "Content-Type": "application/json",
   },

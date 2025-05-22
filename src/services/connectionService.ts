@@ -1,24 +1,24 @@
 import api from "./api"
-import type { UserProfile } from "./authService"
+import type { Card } from "./cardService"
 
 export interface Connection {
   id: string
-  user1Id: string
-  user2Id: string
-  user1Notes?: string
-  user2Notes?: string
-  user1FavoritedUser2: boolean
-  user2FavoritedUser1: boolean
+  card1Id: string
+  card2Id: string
+  card1Notes?: string
+  card2Notes?: string
+  card1FavoritedCard2: boolean
+  card2FavoritedCard1: boolean
   connectionDate: string
   lastInteractionDate?: string
   createdAt: string
   updatedAt: string
-  user1: UserProfile
-  user2: UserProfile
+  card1: Card
+  card2: Card
 }
 
 export interface CreateConnectionPayload {
-  scannedUserId: string
+  scannedCardId: string
 }
 
 export interface UpdateNotesPayload {
@@ -36,7 +36,7 @@ const connectionService = {
    */
   createConnection: async (payload: CreateConnectionPayload): Promise<Connection> => {
     try {
-      const response = await api.post<Connection>("/api/connections", payload)
+      const response = await api.post<Connection>("/connections", payload)
       return response.data
     } catch (error) {
       console.error("Create connection error:", error)
@@ -50,7 +50,7 @@ const connectionService = {
    */
   getAllConnections: async (): Promise<Connection[]> => {
     try {
-      const response = await api.get<Connection[]>("/api/connections")
+      const response = await api.get<Connection[]>("/connections")
       return response.data
     } catch (error) {
       console.error("Get all connections error:", error)
@@ -59,15 +59,15 @@ const connectionService = {
   },
 
   /**
-   * Get all friends for the current user
-   * @returns Promise with an array of user profiles
+   * Get all connected cards
+   * @returns Promise with an array of cards
    */
-  getFriends: async (): Promise<UserProfile[]> => {
+  getConnectedCards: async (): Promise<Card[]> => {
     try {
-      const response = await api.get<UserProfile[]>("/api/connections/friends")
+      const response = await api.get<Card[]>("/connections/cards")
       return response.data
     } catch (error) {
-      console.error("Get friends error:", error)
+      console.error("Get connected cards error:", error)
       throw error
     }
   },
@@ -79,7 +79,7 @@ const connectionService = {
    */
   getConnectionById: async (connectionId: string): Promise<Connection> => {
     try {
-      const response = await api.get<Connection>(`/api/connections/${connectionId}`)
+      const response = await api.get<Connection>(`/connections/${connectionId}`)
       return response.data
     } catch (error) {
       console.error(`Get connection ${connectionId} error:`, error)
@@ -94,7 +94,7 @@ const connectionService = {
    */
   toggleFavorite: async (connectionId: string): Promise<Connection> => {
     try {
-      const response = await api.patch<Connection>(`/api/connections/${connectionId}/favorite`)
+      const response = await api.patch<Connection>(`/connections/${connectionId}/favorite`)
       return response.data
     } catch (error) {
       console.error(`Toggle favorite error:`, error)
@@ -110,7 +110,7 @@ const connectionService = {
    */
   updateNotes: async (connectionId: string, payload: UpdateNotesPayload): Promise<Connection> => {
     try {
-      const response = await api.patch<Connection>(`/api/connections/${connectionId}/notes`, payload)
+      const response = await api.patch<Connection>(`/connections/${connectionId}/notes`, payload)
       return response.data
     } catch (error) {
       console.error(`Update notes error:`, error)
@@ -125,7 +125,7 @@ const connectionService = {
    */
   deleteConnection: async (connectionId: string): Promise<void> => {
     try {
-      await api.delete(`/api/connections/${connectionId}`)
+      await api.delete(`/connections/${connectionId}`)
     } catch (error) {
       console.error(`Delete connection ${connectionId} error:`, error)
       throw error

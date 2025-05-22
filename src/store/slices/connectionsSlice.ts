@@ -29,18 +29,43 @@ export const fetchConnections = createAsyncThunk("connections/fetchConnections",
 
 export const fetchFriends = createAsyncThunk("connections/fetchFriends", async (_, { rejectWithValue }) => {
   try {
-    return await connectionService.getFriends()
+    // Use getConnectedCards instead of getFriends since that's what the API provides
+    const connectedCards = await connectionService.getConnectedCards()
+
+    // Extract user information from the connected cards
+    // This is a simplified approach - in a real app, you might want to fetch more user details
+    const friends = connectedCards.map((card) => ({
+      id: card.userId,
+      firstName: card.name.split(" ")[0],
+      lastName: card.name.split(" ").slice(1).join(" "),
+      nickname: card.nickname,
+      avatar: card.avatar,
+      // Add other required UserProfile fields with default values
+      email: "",
+      isActive: true,
+      subscriptionPlan: "basic",
+      tokenBalance: 0,
+      createdAt: card.createdAt,
+      updatedAt: card.updatedAt,
+    }))
+
+    return friends
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || "Failed to fetch friends. Please try again."
     return rejectWithValue(errorMessage)
   }
 })
 
+// Update the createConnection action to use the correct payload structure
 export const createConnection = createAsyncThunk(
   "connections/createConnection",
-  async (payload: CreateConnectionPayload, { rejectWithValue }) => {
+  async (payload: { scannedUserId: string }, { rejectWithValue }) => {
     try {
-      return await connectionService.createConnection(payload)
+      // Convert the payload to match the API expectation
+      const apiPayload: CreateConnectionPayload = {
+        scannedCardId: payload.scannedUserId, // Note: The API expects scannedCardId, but our app uses scannedUserId
+      }
+      return await connectionService.createConnection(apiPayload)
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || "Failed to create connection. Please try again."
       return rejectWithValue(errorMessage)

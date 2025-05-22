@@ -1,5 +1,7 @@
 import api from "./api"
 
+import AsyncStorage from "@react-native-async-storage/async-storage"
+
 export interface RegisterPayload {
   email: string
   firstName: string
@@ -49,7 +51,14 @@ const authService = {
    */
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>("/api/auth/register", payload)
+      const response = await api.post<AuthResponse>("/auth/register", payload)
+
+      // Store the token in AsyncStorage for future requests
+      if (response.data.accessToken) {
+        await AsyncStorage.setItem("auth_token", response.data.accessToken)
+        await AsyncStorage.setItem("auth_user", JSON.stringify(response.data.user))
+      }
+
       return response.data
     } catch (error) {
       console.error("Registration error:", error)
@@ -64,7 +73,14 @@ const authService = {
    */
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>("/api/auth/login", payload)
+      const response = await api.post<AuthResponse>("/auth/login", payload)
+
+      // Store the token in AsyncStorage for future requests
+      if (response.data.accessToken) {
+        await AsyncStorage.setItem("auth_token", response.data.accessToken)
+        await AsyncStorage.setItem("auth_user", JSON.stringify(response.data.user))
+      }
+
       return response.data
     } catch (error) {
       console.error("Login error:", error)
@@ -78,7 +94,7 @@ const authService = {
    */
   getUserProfile: async (): Promise<UserProfile> => {
     try {
-      const response = await api.get<UserProfile>("/api/users/profile")
+      const response = await api.get<UserProfile>("/users/profile")
       return response.data
     } catch (error) {
       console.error("Get user profile error:", error)

@@ -21,7 +21,7 @@ import { useSelector, useDispatch } from "react-redux"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import type { RootState, AppDispatch } from "../../store"
 import { fetchCards } from "../../store/slices/cardsSlice"
-import type { Card } from "../../store/slices/cardsSlice"
+import type { Card } from "../../services/cardService"
 
 interface CardGroup {
   title: string

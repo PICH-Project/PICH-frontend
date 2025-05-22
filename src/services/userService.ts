@@ -23,7 +23,7 @@ const userService = {
    */
   getCurrentUserProfile: async (): Promise<UserProfile> => {
     try {
-      const response = await api.get<UserProfile>("/api/users/profile")
+      const response = await api.get<UserProfile>("/users/profile")
       return response.data
     } catch (error) {
       console.error("Get current user profile error:", error)
@@ -38,7 +38,7 @@ const userService = {
    */
   getUserById: async (userId: string): Promise<UserProfile> => {
     try {
-      const response = await api.get<UserProfile>(`/api/users/${userId}`)
+      const response = await api.get<UserProfile>(`/users/${userId}`)
       return response.data
     } catch (error) {
       console.error(`Get user ${userId} error:`, error)
@@ -54,7 +54,7 @@ const userService = {
    */
   updateUser: async (userId: string, payload: UpdateUserPayload): Promise<UserProfile> => {
     try {
-      const response = await api.patch<UserProfile>(`/api/users/${userId}`, payload)
+      const response = await api.patch<UserProfile>(`/users/${userId}`, payload)
       return response.data
     } catch (error) {
       console.error(`Update user ${userId} error:`, error)
@@ -70,7 +70,7 @@ const userService = {
    */
   setMainCard: async (userId: string, cardId: string): Promise<UserProfile> => {
     try {
-      const response = await api.patch<UserProfile>(`/api/users/${userId}/main-card/${cardId}`)
+      const response = await api.patch<UserProfile>(`/users/${userId}/main-card/${cardId}`)
       return response.data
     } catch (error) {
       console.error(`Set main card error:`, error)
@@ -85,7 +85,7 @@ const userService = {
    */
   deleteUser: async (userId: string): Promise<void> => {
     try {
-      await api.delete(`/api/users/${userId}`)
+      await api.delete(`/users/${userId}`)
     } catch (error) {
       console.error(`Delete user ${userId} error:`, error)
       throw error
