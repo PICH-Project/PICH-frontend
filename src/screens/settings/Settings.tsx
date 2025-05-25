@@ -124,7 +124,7 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + 20 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
           <Avatar uri={user?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={80} />
           <View style={styles.profileInfo}>

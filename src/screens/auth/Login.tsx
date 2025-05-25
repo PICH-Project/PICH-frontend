@@ -85,6 +85,12 @@ const LoginScreen = () => {
     } catch (err) {
       // Error is handled by the auth context and shown in the useEffect above
       console.error("Login failed:", err)
+      Alert.alert(
+        "Login Failed",
+        "The email or password you entered is invalid. Please check your credentials and try again.",
+        [{ text: "OK" }],
+      )
+      clearAuthError();
     }
   }
 

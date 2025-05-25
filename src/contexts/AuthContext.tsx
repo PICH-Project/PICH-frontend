@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await dispatch(fetchUserProfile())
       }
     } catch (error) {
-      console.error("Login error:", error)
+      //console.error("Login error:", error)
       throw error
     }
   }
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await dispatch(fetchUserProfile())
       }
     } catch (error) {
-      console.error("Registration error:", error)
+      //console.error("Registration error:", error)
       throw error
     }
   }

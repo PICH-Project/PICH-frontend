@@ -39,6 +39,12 @@ const ScanScreen = () => {
       // Try to parse the QR code data
       const qrData = JSON.parse(data)
 
+      console.log(`qrData: ${qrData}`)
+
+      const cardId = qrData.split('/').pop();
+
+      console.log(`cardId: ${cardId}`)
+
       // Check if the QR code contains a user ID
       if (qrData && qrData.userId) {
         Alert.alert(

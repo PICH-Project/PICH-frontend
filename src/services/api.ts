@@ -23,7 +23,6 @@ api.interceptors.request.use(
     // If token exists, add it to the headers
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
-      console.log(`API Request to ${config.url} with auth token`)
     } else {
       console.log(`API Request to ${config.url} without auth token`)
     }
@@ -39,7 +38,7 @@ api.interceptors.request.use(
 // Add a response interceptor to handle 401 errors (unauthorized)
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Response from ${response.config.url} - Status: ${response.status}`)
+    // console.log(`API Response from ${response.config.url} - Status: ${response.status}`)
     return response
   },
   async (error) => {

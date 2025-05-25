@@ -11,9 +11,11 @@ import SettingsNavigator from "./SettingsNavigator"
 import { View, Text, StyleSheet, Platform, Dimensions, TouchableOpacity } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { TabParamList, StackParamList } from "./types"
-
-// Placeholder screens
-const AccountScreen = () => <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
+import CreateCardScreen from "../screens/main/CreateCard"
+import EditCardScreen from "../screens/main/EditCard"
+import SetMainCardScreen from "../screens/main/SetMainCard"
+import DeleteCardScreen from "../screens/main/DeleteCard"
+import AccountScreen from "@/screens/main/Account"
 
 const Tab = createBottomTabNavigator<TabParamList>()
 const Stack = createNativeStackNavigator<StackParamList>()
@@ -25,6 +27,10 @@ const StackNavigator = () => {
       <Stack.Screen name="StackMain" component={StackScreen} />
       <Stack.Screen name="CardDetail" component={CardDetail} />
       <Stack.Screen name="Actions" component={ActionsScreen} />
+      <Stack.Screen name="CreateCard" component={CreateCardScreen} />
+      <Stack.Screen name="EditCard" component={EditCardScreen} />
+      <Stack.Screen name="SetMainCard" component={SetMainCardScreen} />
+      <Stack.Screen name="DeleteCard" component={DeleteCardScreen} />
     </Stack.Navigator>
   )
 }

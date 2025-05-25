@@ -1,6 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { TextInput, Modal, Alert, ActivityIndicator } from "react-native"
+import type { AppDispatch, RootState } from "../../store"
+import { fetchUserProfile, updateUserProfile } from "../../store/slices/userSlice"
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
@@ -12,11 +16,161 @@ import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 const AppSettingsScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
+  const dispatch = useDispatch<AppDispatch>()
+
+  // Redux state
+  const { profile, loading } = useSelector((state: RootState) => state.user)
+
+  // App settings state
   const [locationEnabled, setLocationEnabled] = useState(true)
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true)
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true)
   const [darkModeEnabled, setDarkModeEnabled] = useState(true)
   const [submitButtonPlacement, setSubmitButtonPlacement] = useState("Center")
+
+  // Edit modal state
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false)
+  const [editFirstName, setEditFirstName] = useState("")
+  const [editLastName, setEditLastName] = useState("")
+  const [editNickname, setEditNickname] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    if (!profile) {
+      dispatch(fetchUserProfile())
+    }
+  }, [dispatch, profile])
+
+  // Update edit form when user data changes
+  useEffect(() => {
+    if (profile) {
+      setEditFirstName(profile.firstName || "")
+      setEditLastName(profile.lastName || "")
+      setEditNickname(profile.nickname || "")
+    }
+  }, [profile])
+
+  const handleEditPress = () => {
+    if (profile) {
+      setEditFirstName(profile.firstName || "")
+      setEditLastName(profile.lastName || "")
+      setEditNickname(profile.nickname || "")
+      setIsEditModalVisible(true)
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (!profile) return
+
+    setSaving(true)
+    try {
+      await dispatch(
+        updateUserProfile({
+          id: profile.id,
+          firstName: editFirstName.trim(),
+          lastName: editLastName.trim(),
+          nickname: editNickname.trim(),
+          // Keep existing values for other fields
+          gender: profile.gender,
+          birthDate: profile.birthDate,
+          email: profile.email,
+          phone: profile.phone,
+        }),
+      ).unwrap()
+
+      setIsEditModalVisible(false)
+      Alert.alert("Success", "Profile updated successfully!")
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      Alert.alert("Error", "Failed to update profile. Please try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const renderEditModal = () => (
+    <Modal
+      visible={isEditModalVisible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setIsEditModalVisible(false)}
+    >
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+            <Text style={[styles.modalCancelButton, { color: colors.textSecondary }]}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={[styles.modalTitle, { color: colors.text, fontFamily: typography.fontFamily.bold }]}>
+            Edit Profile
+          </Text>
+          <TouchableOpacity onPress={handleSaveProfile} disabled={saving}>
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={[styles.modalSaveButton, { color: colors.primary }]}>Save</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.inputGroup}>
+            <Text
+              style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}
+            >
+              First Name
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                { color: colors.text, borderColor: colors.border, fontFamily: typography.fontFamily.regular },
+              ]}
+              value={editFirstName}
+              onChangeText={setEditFirstName}
+              placeholder="Enter first name"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text
+              style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}
+            >
+              Last Name
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                { color: colors.text, borderColor: colors.border, fontFamily: typography.fontFamily.regular },
+              ]}
+              value={editLastName}
+              onChangeText={setEditLastName}
+              placeholder="Enter last name"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text
+              style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}
+            >
+              Nickname
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                { color: colors.text, borderColor: colors.border, fontFamily: typography.fontFamily.regular },
+              ]}
+              value={editNickname}
+              onChangeText={setEditNickname}
+              placeholder="Enter nickname"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  )
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -46,32 +200,38 @@ const AppSettingsScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.profileSection}>
-          <Avatar uri="https://randomuser.me/api/portraits/men/32.jpg" size={80} />
+          <Avatar uri={profile?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={80} />
           <View style={styles.profileInfo}>
-            <Text
-              style={[
-                styles.profileName,
-                {
-                  color: colors.text,
-                  fontFamily: typography.fontFamily.bold,
-                  fontSize: typography.fontSize.xl,
-                },
-              ]}
-            >
-              John Doe
-            </Text>
-            <Text
-              style={[
-                styles.profileUsername,
-                {
-                  color: colors.textSecondary,
-                  fontFamily: typography.fontFamily.regular,
-                  fontSize: typography.fontSize.lg,
-                },
-              ]}
-            >
-              Johny
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <>
+                <Text
+                  style={[
+                    styles.profileName,
+                    {
+                      color: colors.text,
+                      fontFamily: typography.fontFamily.bold,
+                      fontSize: typography.fontSize.xl,
+                    },
+                  ]}
+                >
+                  {profile ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || "User" : "Loading..."}
+                </Text>
+                <Text
+                  style={[
+                    styles.profileUsername,
+                    {
+                      color: colors.textSecondary,
+                      fontFamily: typography.fontFamily.regular,
+                      fontSize: typography.fontSize.lg,
+                    },
+                  ]}
+                >
+                  {profile?.nickname || "No nickname"}
+                </Text>
+              </>
+            )}
           </View>
           <TouchableOpacity
             style={[
@@ -80,11 +240,14 @@ const AppSettingsScreen = () => {
                 backgroundColor: colors.secondary,
               },
             ]}
+            onPress={handleEditPress}
+            disabled={loading || !profile}
           >
             <Ionicons name="pencil" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
+        {/* Rest of the settings remain the same */}
         <View style={styles.settingsSection}>
           <Toggle
             label="Location Settings"
@@ -161,6 +324,8 @@ const AppSettingsScreen = () => {
           </View>
         </View>
       </ScrollView>
+
+      {renderEditModal()}
     </SafeAreaView>
   )
 }
@@ -223,6 +388,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalCancelButton: {
+    fontSize: 16,
+  },
+  modalSaveButton: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    marginBottom: 8,
+    fontSize: 14,
+  },
+  input: {
+    height: 56,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
   },
 })
 

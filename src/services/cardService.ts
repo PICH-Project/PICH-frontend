@@ -26,6 +26,7 @@ export interface Card {
   updatedAt: string
 }
 
+// Update CreateCardPayload to exactly match the server's CreateCardDto
 export interface CreateCardPayload {
   type: "BAC" | "PAC" | "VAC" | "CAC"
   name: string
@@ -81,10 +82,39 @@ const cardService = {
    */
   createCard: async (payload: CreateCardPayload): Promise<Card> => {
     try {
-      const response = await api.post<Card>("/cards", payload)
+
+      // Ensure required fields are present and not empty
+      if (!payload.name || !payload.name.trim()) {
+        throw new Error("Name is required and cannot be empty")
+      }
+      if (!payload.nickname || !payload.nickname.trim()) {
+        throw new Error("Nickname is required and cannot be empty")
+      }
+
+      // Clean the payload to ensure no undefined values for required fields
+      const cleanPayload: CreateCardPayload = {
+        type: payload.type,
+        name: payload.name.trim(),
+        nickname: payload.nickname.trim(),
+        ...(payload.avatar && { avatar: payload.avatar }),
+        ...(payload.phone && { phone: payload.phone }),
+        ...(payload.email && { email: payload.email }),
+        ...(payload.social && Object.keys(payload.social).length > 0 && { social: payload.social }),
+        ...(payload.isPrime !== undefined && { isPrime: payload.isPrime }),
+        ...(payload.bio && { bio: payload.bio }),
+        ...(payload.location && { location: payload.location }),
+        ...(payload.category && { category: payload.category }),
+        ...(payload.blockchainId && { blockchainId: payload.blockchainId }),
+        ...(payload.isMainCard !== undefined && { isMainCard: payload.isMainCard }),
+        ...(payload.isInWallet !== undefined && { isInWallet: payload.isInWallet }),
+      }
+
+      const response = await api.post<Card>("/cards", cleanPayload)
+      // console.log("Card created successfully:", response.data)
       return response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error("Create card error:", error)
+      console.error("Error response:", error.response?.data)
       throw error
     }
   },
@@ -145,6 +175,22 @@ const cardService = {
       return response.data
     } catch (error) {
       console.error(`Update card ${cardId} error:`, error)
+      throw error
+    }
+  },
+
+  /**
+   * Toggle the main card status
+   * @param cardId The ID of the card to set as main
+   * @returns Promise with the updated card
+   */
+  toggleMainCard: async (cardId: string): Promise<Card> => {
+    try {
+      const response = await api.patch<Card>(`/cards/${cardId}/toggle-main`)
+      return response.data
+    } catch (error: any) {
+      console.error(`Toggle main card error:`, error)
+      console.error("Error response:", error.response?.data)
       throw error
     }
   },

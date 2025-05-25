@@ -78,7 +78,7 @@ const AccountSettingsScreen = () => {
         setLastName(user.lastName || "Doe")
         setNickName(user.nickname || "")
         setGender(user.gender || "M")
-        setBirthDate(user.birthDate || "24.02.1986")
+        setBirthDate(user.birthDate || "1986-02-24")
         setEmail(user.email || "j.doe@gmail.com")
         setPhone(user.phone || "+1 876 765 56 54")
       }
@@ -116,7 +116,7 @@ const AccountSettingsScreen = () => {
           lastName,
           nickname: nickName,
           gender,
-          birthDate,
+          birthDate: new Date(birthDate).toISOString().slice(0, 10),
           email,
           phone,
         }),

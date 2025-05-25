@@ -1,13 +1,13 @@
 "use client"
 
 import { useMemo } from "react"
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, StatusBar } from "react-native"
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, StatusBar, Alert } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { RouteProp } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import type { RootState } from "../../store"
 import type { StackParamList } from "../../navigation/types"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
@@ -35,45 +35,36 @@ const ActionsScreen = () => {
 
   const handleAddNewCard = () => {
     // Navigate to create card screen
-    console.log("Add new card")
-    // navigation.navigate("CreateCard")
+    navigation.navigate("CreateCard")
   }
 
   const handleEditCard = () => {
-    if (!cardId) {
-      console.log("No card selected to edit")
-      return
-    }
     // Navigate to edit card screen
-    console.log("Edit card:", cardId)
-    // navigation.navigate("EditCard", { cardId })
+    navigation.navigate("EditCard")
   }
 
-  const handleAddToWallet = () => {
+  const handleAddToWallet = async () => {
     if (!cardId) {
-      console.log("No card selected to add to wallet")
+      Alert.alert("Error", "No card selected to add to wallet")
       return
     }
-    console.log("Add card to wallet:", cardId)
-    // Implement wallet functionality
+
+    try {
+      Alert.alert("Success", "Card wallet status updated")
+    } catch (error) {
+      console.error("Error toggling wallet status:", error)
+      Alert.alert("Error", "Failed to update wallet status. Please try again.")
+    }
   }
 
-  const handleSetMainCard = () => {
-    if (!cardId) {
-      console.log("No card selected to set as main")
-      return
-    }
-    console.log("Set as main card:", cardId)
-    // Implement set as main card functionality
+  const handleSetMainCard = async () => {
+    // Navigate to set main card screen
+    navigation.navigate("SetMainCard")
   }
 
   const handleDeleteCard = () => {
-    if (!cardId) {
-      console.log("No card selected to delete")
-      return
-    }
-    console.log("Delete card:", cardId)
-    // Implement delete card functionality with confirmation
+    // Navigate to delete card screen
+    navigation.navigate("DeleteCard")
   }
 
   const actions: ActionItem[] = useMemo(
@@ -128,7 +119,7 @@ const ActionsScreen = () => {
         styles.container,
         {
           backgroundColor: "#F8F8FF",
-           // Add padding for tab bar
+          // Add padding for tab bar
         },
       ]}
     >

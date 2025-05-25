@@ -42,12 +42,7 @@ export const fetchUserProfile = createAsyncThunk("user/fetchUserProfile", async 
   try {
     // Log the current auth state
     const state = getState() as RootState
-    console.log("Auth state before fetching profile:", {
-      isAuthenticated: state.auth.isAuthenticated,
-      hasToken: !!state.auth.token,
-    })
 
-    console.log("Fetching user profile from API...")
     const profile = await userService.getCurrentUserProfile()
 
     // Validate the profile data
@@ -56,7 +51,6 @@ export const fetchUserProfile = createAsyncThunk("user/fetchUserProfile", async 
       return rejectWithValue("Invalid user profile data received from API")
     }
 
-    console.log("User profile fetched successfully:", profile)
     return profile
   } catch (error: any) {
     console.error("Error fetching user profile:", error)
@@ -73,9 +67,7 @@ export const fetchUserProfile = createAsyncThunk("user/fetchUserProfile", async 
 // Get a user by ID using the userService
 export const getUserById = createAsyncThunk("user/getUserById", async (userId: string, { rejectWithValue }) => {
   try {
-    console.log(`Fetching user with ID ${userId} from API...`)
     const user = await userService.getUserById(userId)
-    console.log("User fetched:", user)
     return user
   } catch (error: any) {
     console.error(`Error fetching user with ID ${userId}:`, error)
@@ -89,13 +81,11 @@ export const updateUserProfile = createAsyncThunk(
   "user/updateUserProfile",
   async ({ id, ...updates }: { id: string } & UpdateUserPayload, { rejectWithValue }) => {
     try {
-      console.log(`Updating user with ID ${id}...`, updates)
 
       // Remove email from updates if it exists (API doesn't want it)
       const { email, ...validUpdates } = updates as any
 
       const updatedUser = await userService.updateUser(id, validUpdates)
-      console.log("User updated:", updatedUser)
       return updatedUser
     } catch (error: any) {
       console.error("Error updating user profile:", error)
@@ -110,9 +100,7 @@ export const setMainCard = createAsyncThunk(
   "user/setMainCard",
   async ({ userId, cardId }: { userId: string; cardId: string }, { rejectWithValue }) => {
     try {
-      console.log(`Setting card ${cardId} as main card for user ${userId}...`)
       const updatedUser = await userService.setMainCard(userId, cardId)
-      console.log("Main card set:", updatedUser)
       return updatedUser
     } catch (error: any) {
       console.error("Error setting main card:", error)
@@ -127,7 +115,6 @@ export const upgradeSubscription = createAsyncThunk(
   "user/upgradeSubscription",
   async ({ userId, plan }: { userId: string; plan: "basic" | "medium" | "premium" }, { rejectWithValue }) => {
     try {
-      console.log(`Upgrading subscription for user ${userId} to ${plan}...`)
 
       // Create a subscription update payload with the correct field name
       const subscriptionData: UpdateUserPayload = {
@@ -137,7 +124,6 @@ export const upgradeSubscription = createAsyncThunk(
 
       // Update the user with the new subscription data
       const updatedUser = await userService.updateUser(userId, subscriptionData)
-      console.log("Subscription upgraded:", updatedUser)
 
       return updatedUser
     } catch (error: any) {
