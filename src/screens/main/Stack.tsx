@@ -11,6 +11,10 @@ import {
   Image,
   SectionList,
   StatusBar,
+  Alert,
+  Modal,
+  Animated,
+  Dimensions,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
@@ -20,7 +24,7 @@ import { useTheme } from "../../hooks/useTheme"
 import { useSelector, useDispatch } from "react-redux"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import type { RootState, AppDispatch } from "../../store"
-import { fetchCards } from "../../store/slices/cardsSlice"
+import { fetchCards, deleteCard } from "../../store/slices/cardsSlice"
 import type { Card } from "../../services/cardService"
 
 interface CardGroup {
@@ -28,7 +32,141 @@ interface CardGroup {
   data: Card[]
 }
 
+interface ActionMenuProps {
+  visible: boolean
+  card: Card | null
+  position: { x: number; y: number }
+  onClose: () => void
+  onDelete: (card: Card) => void
+}
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
+
 type StackNav = NativeStackNavigationProp<StackParamList>
+
+const ActionMenu = ({ visible, card, position, onClose, onDelete }: ActionMenuProps) => {
+  const { colors } = useTheme()
+  const fadeAnim = new Animated.Value(0)
+  const scaleAnim = new Animated.Value(0.8)
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start()
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start()
+    }
+  }, [visible])
+
+  if (!visible || !card) return null
+
+  const menuWidth = 200
+  const menuHeight = 60 // Height for one action, will expand as we add more
+
+  // Calculate position to keep menu on screen
+  let menuX = position.x
+  let menuY = position.y
+
+  // Adjust horizontal position if menu would go off screen
+  if (menuX + menuWidth > screenWidth - 20) {
+    menuX = screenWidth - menuWidth - 20
+  }
+  if (menuX < 20) {
+    menuX = 20
+  }
+
+  // Adjust vertical position if menu would go off screen
+  if (menuY + menuHeight > screenHeight - 100) {
+    menuY = position.y - menuHeight - 20
+  }
+
+  const actions = [
+    {
+      id: "delete",
+      title: "Delete",
+      icon: "trash-outline",
+      color: "#FF6347",
+      onPress: () => {
+        onClose()
+        onDelete(card)
+      },
+    },
+    // Future actions can be added here
+    // {
+    //   id: "edit",
+    //   title: "Edit",
+    //   icon: "pencil-outline",
+    //   color: "#007AFF",
+    //   onPress: () => {
+    //     onClose()
+    //     // Handle edit
+    //   },
+    // },
+  ]
+
+  return (
+    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <Animated.View
+          style={[
+            styles.actionMenu,
+            {
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+              left: menuX,
+              top: menuY,
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          <View style={styles.menuHeader}>
+            <Text style={[styles.menuTitle, { color: colors.text }]} numberOfLines={1}>
+              {card.name}
+            </Text>
+          </View>
+          {actions.map((action, index) => (
+            <TouchableOpacity
+              key={action.id}
+              style={[
+                styles.actionItem,
+                index === actions.length - 1 && styles.lastActionItem,
+                { borderBottomColor: colors.border },
+              ]}
+              onPress={action.onPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={action.icon as any} size={20} color={action.color} />
+              <Text style={[styles.actionText, { color: action.color }]}>{action.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </Animated.View>
+      </TouchableOpacity>
+    </Modal>
+  )
+}
 
 const StackScreen = () => {
   const navigation = useNavigation()
@@ -41,6 +179,10 @@ const StackScreen = () => {
   const [isFolderEnabled, setIsFolderEnabled] = useState(false)
   const [isStarEnabled, setIsStarEnabled] = useState(false)
   const [starredCards, setStarredCards] = useState<string[]>([]) // IDs of starred cards
+  const [deletingCardId, setDeletingCardId] = useState<string | null>(null)
+  const [actionMenuVisible, setActionMenuVisible] = useState(false)
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
   const tabBarHeight = useTabBarHeight()
 
   useEffect(() => {
@@ -152,8 +294,67 @@ const StackScreen = () => {
     }
   }
 
+  const showActionMenu = (card: Card, event: any) => {
+    const { pageX, pageY } = event.nativeEvent
+    setSelectedCard(card)
+    setMenuPosition({ x: pageX, y: pageY })
+    setActionMenuVisible(true)
+  }
+
+  const hideActionMenu = () => {
+    setActionMenuVisible(false)
+    setSelectedCard(null)
+  }
+
+  const confirmDeleteCard = (card: Card) => {
+    Alert.alert(
+      "Delete Card",
+      `Are you sure you want to delete "${card.name}"? This action cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => handleDeleteCard(card.id),
+        },
+      ],
+      { cancelable: true },
+    )
+  }
+
+  const handleDeleteCard = async (cardId: string) => {
+    setDeletingCardId(cardId)
+    try {
+      console.log(`Deleting card with ID: ${cardId}`)
+      await dispatch(deleteCard(cardId)).unwrap()
+      console.log("Card deleted successfully")
+      Alert.alert("Success", "Card deleted successfully")
+    } catch (error: any) {
+      console.error("Error deleting card:", error)
+      const errorMessage = error.message || "Failed to delete card. Please try again."
+      Alert.alert("Error", errorMessage)
+    } finally {
+      setDeletingCardId(null)
+    }
+  }
+
+  const handleCardLongPress = (card: Card, event: any) => {
+    console.log(`Long press on card: ${card.name}`)
+    showActionMenu(card, event)
+  }
+
   const renderCard = ({ item }: { item: Card }) => (
-    <TouchableOpacity style={styles.cardOuterContainer} onPress={() => handleCardPress(item.id)} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[styles.cardOuterContainer, deletingCardId === item.id && styles.cardDeleting]}
+      onPress={() => handleCardPress(item.id)}
+      onLongPress={(event) => handleCardLongPress(item, event)}
+      delayLongPress={500}
+      activeOpacity={0.7}
+      disabled={deletingCardId === item.id}
+    >
       <View style={styles.cardContainer}>
         <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(item.type) }]}>
           <Text style={styles.cardTypeText}>{item.type}</Text>
@@ -162,15 +363,21 @@ const StackScreen = () => {
         <View style={styles.cardContent}>
           <Image
             source={{ uri: item.avatar || "https://randomuser.me/api/portraits/men/32.jpg" }}
-            style={styles.avatar}
+            style={[styles.avatar, deletingCardId === item.id && styles.avatarDeleting]}
           />
 
           <View style={styles.cardInfo}>
-            <Text style={styles.cardName}>{item.name}</Text>
-            <Text style={styles.cardNickname}>{item.nickname}</Text>
+            <Text style={[styles.cardName, deletingCardId === item.id && styles.textDeleting]}>{item.name}</Text>
+            <Text style={[styles.cardNickname, deletingCardId === item.id && styles.textDeleting]}>
+              {item.nickname}
+            </Text>
           </View>
 
-          <TouchableOpacity style={styles.callButton} onPress={(event) => handleCall(item.id, event)}>
+          <TouchableOpacity
+            style={styles.callButton}
+            onPress={(event) => handleCall(item.id, event)}
+            disabled={deletingCardId === item.id}
+          >
             <Ionicons name="call-outline" size={24} color="#000000" />
           </TouchableOpacity>
         </View>
@@ -178,6 +385,12 @@ const StackScreen = () => {
         {item.isPrime && (
           <View style={styles.primeBadge}>
             <Text style={styles.primeText}>PRIME</Text>
+          </View>
+        )}
+
+        {deletingCardId === item.id && (
+          <View style={styles.deletingOverlay}>
+            <Text style={styles.deletingText}>Deleting...</Text>
           </View>
         )}
       </View>
@@ -246,6 +459,14 @@ const StackScreen = () => {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <ActionMenu
+        visible={actionMenuVisible}
+        card={selectedCard}
+        position={menuPosition}
+        onClose={hideActionMenu}
+        onDelete={confirmDeleteCard}
+      />
     </SafeAreaView>
   )
 }
@@ -360,6 +581,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  cardDeleting: {
+    opacity: 0.6,
+  },
   cardContainer: {
     position: "relative",
     borderRadius: 12,
@@ -393,6 +617,9 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
   },
+  avatarDeleting: {
+    opacity: 0.5,
+  },
   cardInfo: {
     flex: 1,
     marginLeft: 16,
@@ -405,6 +632,9 @@ const styles = StyleSheet.create({
   cardNickname: {
     fontSize: 16,
     color: "#888888",
+  },
+  textDeleting: {
+    opacity: 0.5,
   },
   callButton: {
     width: 40,
@@ -432,6 +662,63 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "90deg" }],
     width: 60, // Increased width to ensure text fits properly when rotated
     textAlign: "center", // Center the text
+  },
+  deletingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+  },
+  deletingText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FF6347",
+  },
+  // Action Menu Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+  },
+  actionMenu: {
+    position: "absolute",
+    minWidth: 200,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  menuHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  actionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  lastActionItem: {
+    borderBottomWidth: 0,
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginLeft: 12,
   },
 })
 

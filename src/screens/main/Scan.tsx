@@ -46,7 +46,7 @@ const ScanScreen = () => {
       console.log(`cardId: ${cardId}`)
 
       // Check if the QR code contains a user ID
-      if (qrData && qrData.userId) {
+      if (qrData && cardId) {
         Alert.alert(
           "Connection Request",
           "Would you like to connect with this user?",
@@ -61,7 +61,7 @@ const ScanScreen = () => {
               onPress: async () => {
                 try {
                   // Create a connection with the scanned user
-                  await dispatch(createConnection({ scannedUserId: qrData.userId })).unwrap()
+                  await dispatch(createConnection({ scannedCardId: cardId })).unwrap()
                   Alert.alert("Success", "Connection request sent successfully!")
                   navigation.navigate("Stack" as never)
                 } catch (error: any) {

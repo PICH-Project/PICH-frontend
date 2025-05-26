@@ -59,11 +59,11 @@ export const fetchFriends = createAsyncThunk("connections/fetchFriends", async (
 // Update the createConnection action to use the correct payload structure
 export const createConnection = createAsyncThunk(
   "connections/createConnection",
-  async (payload: { scannedUserId: string }, { rejectWithValue }) => {
+  async (payload: { scannedCardId: string }, { rejectWithValue }) => {
     try {
       // Convert the payload to match the API expectation
       const apiPayload: CreateConnectionPayload = {
-        scannedCardId: payload.scannedUserId, // Note: The API expects scannedCardId, but our app uses scannedUserId
+        scannedCardId: payload.scannedCardId,
       }
       return await connectionService.createConnection(apiPayload)
     } catch (error: any) {
