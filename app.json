@@ -2,6 +2,7 @@
   "expo": {
     "name": "PICH",
     "slug": "pich",
+    "scheme": "pich-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -28,7 +29,8 @@
       },
       "package": "com.pich.app",
       "permissions": [
-        "CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -48,8 +50,24 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ]
     ],
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "6af77baa-6f83-44c4-82e7-1d7e03894e42"
+      }
+    },
+    "owner": "pich-app"
   }
 }

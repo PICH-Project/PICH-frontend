@@ -8,12 +8,17 @@ import Button from "../../components/common/Button"
 import SocialButton from "../../components/auth/SocialButton"
 import useAuth from "../../hooks/useAuth"
 import type { RootState } from "../../store"
+import { createPrivyClient, useLoginWithOAuth, usePrivy } from "@privy-io/expo"
 
 const WelcomeScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
   const { isAuthenticated } = useSelector((state: RootState) => state.auth)
-  const { login } = useAuth()
+  const { login, state } = useLoginWithOAuth();
+  const { user } = usePrivy();
+  //const { login } = useAuth()
+
+  //console.log(user, 'user');
 
   // If already authenticated, skip welcome screen
   useEffect(() => {
@@ -23,10 +28,22 @@ const WelcomeScreen = () => {
     }
   }, [isAuthenticated, navigation])
 
-  const handleGoogleLogin = () => {
-    // Implement Google login
-    console.log("Google login")
-  }
+  const handleGoogleLogin = async () => {
+    try {
+
+      const privy = createPrivyClient({
+        appId: 'cmawe29c801vul80mh223hy0z',
+        clientId: 'WY6LLC6Z7Xg1TpfLBxaEA6FEhKkX3iubm42uxg2JkFzr5'
+      });
+      const accessToken = await privy.getAccessToken();
+
+      console.log('try google', accessToken)
+      const user = await login({ provider: 'google' });
+      console.log('try google end', user, state)
+    } catch (error) {
+      console.error('Login failed', error);
+    }
+  };
 
   const handleFacebookLogin = () => {
     // Implement Facebook login
@@ -62,7 +79,7 @@ const WelcomeScreen = () => {
           <SocialButton provider="facebook" onPress={handleFacebookLogin} />
         </View>
 
-        <View style={styles.buttonsContainer}>
+        {/* <View style={styles.buttonsContainer}>
           <Button
             title="Log in"
             variant="outline"
@@ -77,7 +94,7 @@ const WelcomeScreen = () => {
             style={styles.button}
             fullWidth
           />
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   )

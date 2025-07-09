@@ -1,8 +1,8 @@
 import 'fast-text-encoding';
 import 'react-native-get-random-values';
-import {Buffer} from 'buffer';
-global.Buffer = Buffer;
 import '@ethersproject/shims';
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
 
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { StatusBar } from "expo-status-bar"
@@ -13,22 +13,25 @@ import { store, persistor } from "./src/store"
 import AppNavigator from "./src/navigation"
 import { ThemeProvider } from "./src/hooks/useTheme"
 import { AuthProvider } from "./src/contexts/AuthContext"
+import PrivyProvider from './src/providers/PrivyProvider';
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <ThemeProvider>
-          <AuthProvider>
-            <SafeAreaProvider>
-              <NavigationContainer>
-                <StatusBar style="auto" />
-                <AppNavigator />
-              </NavigationContainer>
-            </SafeAreaProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </PersistGate>
-    </Provider>
+    <PrivyProvider>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ThemeProvider>
+            <AuthProvider>
+              <SafeAreaProvider>
+                <NavigationContainer>
+                  <StatusBar style="auto" />
+                  <AppNavigator />
+                </NavigationContainer>
+              </SafeAreaProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </PersistGate>
+      </Provider>
+    </PrivyProvider>
   )
 }

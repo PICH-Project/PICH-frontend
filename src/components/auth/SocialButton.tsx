@@ -6,12 +6,18 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../hooks/useTheme"
 
 interface SocialButtonProps {
-  provider: "google" | "facebook"
+  provider?: "google" | "facebook" | "solana"
   onPress: () => void
-  style?: ViewStyle
+  style?: ViewStyle;
+  text?: string;
 }
 
-const SocialButton: React.FC<SocialButtonProps> = ({ provider, onPress, style }) => {
+const SocialButton: React.FC<SocialButtonProps> = ({
+  provider = "",
+  onPress,
+  style,
+  text,
+}) => {
   const { colors, typography } = useTheme()
 
   const getIcon = () => {
@@ -20,8 +26,10 @@ const SocialButton: React.FC<SocialButtonProps> = ({ provider, onPress, style })
         return "logo-google"
       case "facebook":
         return "logo-facebook"
+      case "solana":
+        return ""
       default:
-        return "logo-google"
+        return ""
     }
   }
 
@@ -31,6 +39,8 @@ const SocialButton: React.FC<SocialButtonProps> = ({ provider, onPress, style })
         return "Continue with Google"
       case "facebook":
         return "Continue with Facebook"
+      case "solana":
+        return "Continue with Solana"
       default:
         return "Continue with Google"
     }
@@ -60,7 +70,9 @@ const SocialButton: React.FC<SocialButtonProps> = ({ provider, onPress, style })
       ]}
       onPress={onPress}
     >
-      <Ionicons name={getIcon()} size={24} color={getIconColor()} style={styles.icon} />
+      {!!getIcon() && (
+        <Ionicons name={getIcon()} size={24} color={getIconColor()} style={styles.icon} />
+      )}
       <Text
         style={[
           styles.text,
@@ -71,7 +83,7 @@ const SocialButton: React.FC<SocialButtonProps> = ({ provider, onPress, style })
           },
         ]}
       >
-        {getLabel()}
+        {text || getLabel()}
       </Text>
     </TouchableOpacity>
   )
