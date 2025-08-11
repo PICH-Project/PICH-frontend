@@ -9,9 +9,14 @@ import { useAuth } from "../../contexts/AuthContext"
 import type { RootState } from "../../store"
 import { createPrivyClient, useLoginWithOAuth, usePrivy } from "@privy-io/expo"
 import { ConfigVariables } from "@/constants/configVariables"
+import { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import { StackParamList } from "@/navigation/types"
+
+type StackNav = NativeStackNavigationProp<StackParamList>
 
 const WelcomeScreen = () => {
   const navigation = useNavigation()
+  const stackNavigation = useNavigation<StackNav>()
   const { loginWithPrivy } = useAuth()
   const { colors, typography } = useTheme()
   const { isAuthenticated } = useSelector((state: RootState) => state.auth)
@@ -27,6 +32,8 @@ const WelcomeScreen = () => {
 
       try {
         await loginWithPrivy({ privyAccessToken: accessToken })
+
+        stackNavigation.navigate("CardDetail", { cardId: 'e19ad2f8-165f-4df8-8997-7065174105ae' });
       } catch (err) {
         // Error is handled by the auth context and shown in the useEffect above
         console.error("Login with google failed during backend request:", err)
@@ -61,23 +68,6 @@ const WelcomeScreen = () => {
       console.log("User already authenticated, skipping welcome screen")
     }
   }, [isAuthenticated, navigation])
-
-  const handleGoogleLogin = async () => {
-    try {
-
-      const privy = createPrivyClient({
-        appId: 'cmawe29c801vul80mh223hy0z',
-        clientId: 'WY6LLC6Z7Xg1TpfLBxaEA6FEhKkX3iubm42uxg2JkFzr5'
-      });
-      const accessToken = await privy.getAccessToken();
-
-      console.log('try google', accessToken)
-      const user = await login({ provider: 'google' });
-      console.log('try google end', user, state)
-    } catch (error) {
-      console.error('Login failed', error);
-    }
-  };
 
   const handleFacebookLogin = () => {
     // Implement Facebook login

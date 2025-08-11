@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   headerContainer: {
-    marginTop: 24,
+    marginTop: 36,
     marginBottom: 32,
     alignItems: "center",
   },

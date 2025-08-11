@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import Switch from "@/components/common/Switch"
+import { useState } from "react"
 
 interface PlanFeature {
   id: string
@@ -13,13 +15,16 @@ interface PlanFeature {
 interface SubscriptionPlan {
   id: string
   title: string
-  price: number
+  priceMonthly: number
+  priceAnnual: number
   features: PlanFeature[]
   isCurrent?: boolean
   isHighlighted?: boolean
+  isBasic?: boolean
 }
 
 const SubscriptionScreen = () => {
+  const [isAnnual, setIsAnnual] = useState<boolean>(false);
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
 
@@ -27,36 +32,47 @@ const SubscriptionScreen = () => {
     {
       id: "basic",
       title: "Basic",
-      price: 0,
+      priceMonthly: 0,
+      priceAnnual: 0,
       isCurrent: true,
+      isBasic: true,
       features: [
-        { id: "f1", title: "Standart card" },
-        { id: "f2", title: "Clip figjam" },
-        { id: "f3", title: "Frame project arrow italic pixel" },
-      ],
-    },
-    {
-      id: "medium",
-      title: "Medium",
-      price: 9.99,
-      features: [
-        { id: "f1", title: "Basic Plan" },
-        { id: "f2", title: "Clip figjam" },
-        { id: "f3", title: "Frame project arrow italic pixel" },
-        { id: "f4", title: "Frame project arrow italic pixel" },
+        { id: "f1", title: "PAC" },
+        { id: "f2", title: "Card Builder" },
+        { id: "f3", title: "Card Index" },
+        { id: "f4", title: "Loyalty Programmes" },
       ],
     },
     {
       id: "premium",
       title: "Premium",
-      price: 19.99,
+      priceMonthly: 3,
+      priceAnnual: 30,
+      features: [
+        { id: "f1", title: "Premium user indication" },
+        { id: "f2", title: "Card and card index personalisation elements" },
+        { id: "f3", title: "Creation of additional card sorting categories" },
+        { id: "f4", title: "Extended application functionality" },
+      ],
+    },
+    {
+      id: "business",
+      title: "Business",
+      priceMonthly: 7,
+      priceAnnual: 70,
+      features: [
+        { id: "f1", title: "Personalized offers and updates" },
+        { id: "f2", title: "Reliable referral logic" },
+      ],
+    },
+    {
+      id: "vip",
+      title: "VIP",
+      priceMonthly: 50,
+      priceAnnual: 500,
       isHighlighted: true,
       features: [
-        { id: "f1", title: "Medium Plan" },
-        { id: "f2", title: "Clip figjam" },
-        { id: "f3", title: "Frame project arrow italic pixel" },
-        { id: "f4", title: "Frame arrow italic pixel" },
-        { id: "f5", title: "Frame project arrow" },
+        { id: "f1", title: "All best options" },
       ],
     },
   ]
@@ -112,6 +128,33 @@ const SubscriptionScreen = () => {
         >
           Choose a subscription plan to unlock all the functionality of the application
         </Text>
+
+        <View style={styles.peroidContainer}>
+          <View style={styles.peroidContent}>
+            <Text
+              style={{
+                color: colors.text,
+                fontFamily: typography.fontFamily.regular,
+                fontSize: typography.fontSize.md,
+              }}
+            >
+              Monthly
+            </Text>
+            <Switch
+              value={isAnnual}
+              onValueChange={setIsAnnual}
+            />
+            <Text
+              style={{
+                color: colors.text,
+                fontFamily: typography.fontFamily.regular,
+                fontSize: typography.fontSize.md,
+              }}
+            >
+              Annual
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.plansContainer}>
           {plans.map((plan) => (
@@ -185,14 +228,14 @@ const SubscriptionScreen = () => {
                       },
                     ]}
                   >
-                    {plan.price.toString().split(".")[0]}
-                    {plan.price.toString().includes(".") && (
+                    {(isAnnual ? plan.priceAnnual : plan.priceMonthly).toString().split(".")[0]}
+                    {(isAnnual ? plan.priceAnnual : plan.priceMonthly).toString().includes(".") && (
                       <Text
                         style={{
                           fontSize: typography.fontSize.xl,
                         }}
                       >
-                        .{plan.price.toString().split(".")[1]}
+                        .{(isAnnual ? plan.priceAnnual : plan.priceMonthly).toString().split(".")[1]}
                       </Text>
                     )}
                   </Text>
@@ -207,7 +250,7 @@ const SubscriptionScreen = () => {
                     },
                   ]}
                 >
-                  Monthly
+                 {plan.isBasic ? 'Forever' : (isAnnual ? 'Annual' : 'Monthly')}
                 </Text>
               </View>
 
@@ -264,12 +307,10 @@ const SubscriptionScreen = () => {
             },
           ]}
         >
-          Vertical editor underline opacity follower image move create. Union vertical scale ipsum bullet library star
-          list line. Italic stroke image link content ellipse select layer distribute outline. Subtract style polygon
-          thumbnail asset. Content team arrow thumbnail undo. Bullet content move italic list device. Clip rectangle
-          union subtract fill fill union pencil edit scrolling. Bold connection scrolling layout opacity text selection.
-          Figjam library shadow scrolling team font plugin move flatten. Pencil draft content share list polygon pen
-          plugin. Export rectangle slice follower vector content mask arrange.
+          The project’s monetization model is based on an internal token.
+          Businesses wishing to reward users must purchase the token from the open market, which maintains token circulation and liquidity. 
+          Users can spend tokens to pay for subscriptions, customize cards, access additional services, and unlock optional features. 
+          The token will also be used for interactive and social purposes, such as gifting, collecting NFTs, or sending valuable content.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -286,6 +327,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: 24,
   },
   headerTitle: {
     textAlign: "center",
@@ -300,10 +342,21 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 16,
   },
   plansContainer: {
     marginBottom: 24,
+  },
+  peroidContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  peroidContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 16,
   },
   planCard: {
     borderRadius: 16,

@@ -479,10 +479,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     ...Platform.select({
       ios: {
-        paddingTop: 12,
+        paddingTop: 20,
       },
       android: {
-        paddingTop: 16,
+        paddingTop: 36,
       },
     }),
   },

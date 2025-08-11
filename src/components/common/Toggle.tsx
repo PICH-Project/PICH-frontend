@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-import { View, Text, StyleSheet, Switch, Platform } from "react-native"
+import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../../hooks/useTheme"
+import Switch from "./Switch"
 
 interface ToggleProps {
   label: string
@@ -49,12 +50,6 @@ const Toggle: React.FC<ToggleProps> = ({ label, description, value, onValueChang
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
-        trackColor={{
-          false: Platform.OS === "ios" ? "#E9E9EA" : "#767577",
-          true: colors.secondary,
-        }}
-        thumbColor={Platform.OS === "ios" ? "#FFFFFF" : value ? colors.primary : "#F4F3F4"}
-        ios_backgroundColor="#E9E9EA"
       />
     </View>
   )

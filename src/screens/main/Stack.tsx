@@ -263,6 +263,7 @@ const StackScreen = () => {
   }
 
   const handleCardPress = (cardId: string) => {
+    console.log('cardId', cardId);
     stackNavigation.navigate("CardDetail", { cardId })
   }
 
@@ -498,6 +499,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: 24,
   },
   title: {
     fontSize: 32,

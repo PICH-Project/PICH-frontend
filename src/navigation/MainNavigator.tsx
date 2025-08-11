@@ -137,8 +137,8 @@ const MainNavigator = () => {
         headerShown: false,
       }}
     >
+      <Tab.Screen name="Stack" component={StackNavigator} />
       <Tab.Screen name="Account" component={AccountScreen} />
-      <Tab.Screen name="Settings" component={SettingsNavigator} />
       <Tab.Screen
         name="Share"
         component={ShareScreen}
@@ -147,7 +147,7 @@ const MainNavigator = () => {
         }}
       />
       <Tab.Screen name="Scan" component={ScanScreen} />
-      <Tab.Screen name="Stack" component={StackNavigator} />
+      <Tab.Screen name="Settings" component={SettingsNavigator} />
     </Tab.Navigator>
   )
 }
