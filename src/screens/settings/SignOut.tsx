@@ -8,8 +8,10 @@ import Button from "../../components/common/Button"
 import { logout } from "../../store/slices/authSlice"
 import type { AppDispatch, RootState } from "../../store"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { usePrivy } from "@privy-io/expo"
 
 const SignOutScreen = () => {
+  const { logout: logoutPrivy } = usePrivy();
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
   const dispatch = useDispatch<AppDispatch>()
@@ -29,6 +31,7 @@ const SignOutScreen = () => {
           style: "destructive",
           onPress: () => {
             dispatch(logout())
+            logoutPrivy();
           },
         },
       ],

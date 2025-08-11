@@ -1,21 +1,55 @@
 "use client"
 import { useEffect } from "react"
-import { View, Text, StyleSheet, Image, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, Image, SafeAreaView, ScrollView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { useSelector } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
-import Button from "../../components/common/Button"
 import SocialButton from "../../components/auth/SocialButton"
-import useAuth from "../../hooks/useAuth"
+import { useAuth } from "../../contexts/AuthContext"
 import type { RootState } from "../../store"
 import { createPrivyClient, useLoginWithOAuth, usePrivy } from "@privy-io/expo"
+import { ConfigVariables } from "@/constants/configVariables"
 
 const WelcomeScreen = () => {
   const navigation = useNavigation()
+  const { loginWithPrivy } = useAuth()
   const { colors, typography } = useTheme()
   const { isAuthenticated } = useSelector((state: RootState) => state.auth)
-  const { login, state } = useLoginWithOAuth();
-  const { user } = usePrivy();
+  const { login, state } = useLoginWithOAuth({
+    onSuccess: async () => {
+      const privy = createPrivyClient({
+        appId: ConfigVariables.PRIVY_APP_ID,
+        clientId: ConfigVariables.PRIVY_CLIENT_SIMPLE_ID,
+      });
+      const accessToken = await privy.getAccessToken();
+
+      console.log('accessToken', accessToken);
+
+      try {
+        await loginWithPrivy({ privyAccessToken: accessToken })
+      } catch (err) {
+        // Error is handled by the auth context and shown in the useEffect above
+        console.error("Login with google failed during backend request:", err)
+        Alert.alert(
+          "Login Failed",
+          "The google account data you entered is invalid. Please check your credentials and try again.",
+          [{ text: "OK" }],
+        );
+        logout();
+      }
+    },
+    onError: (err: any) => {
+      console.error("Login with google failed during oauth with privy:", err)
+      Alert.alert(
+        "Login Failed",
+        "The google account data you entered is invalid. Please check your credentials and try again.",
+        [{ text: "OK" }],
+      );
+      logout();
+    },
+  });
+  const { user, logout } = usePrivy();
+
   //const { login } = useAuth()
 
   //console.log(user, 'user');
@@ -75,7 +109,7 @@ const WelcomeScreen = () => {
         </Text>
 
         <View style={styles.socialButtonsContainer}>
-          <SocialButton provider="google" onPress={handleGoogleLogin} />
+          <SocialButton provider="google" onPress={() => login({ provider: 'google' })} />
           <SocialButton provider="facebook" onPress={handleFacebookLogin} />
         </View>
 

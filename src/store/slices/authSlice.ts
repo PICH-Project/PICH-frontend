@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import authService, { type LoginPayload, type RegisterPayload, type UserProfile } from "../../services/authService"
+import authService, { LoginWithPrivyPayload, type LoginPayload, type RegisterPayload, type UserProfile } from "../../services/authService"
 
 interface AuthState {
   isAuthenticated: boolean
@@ -49,6 +49,25 @@ export const login = createAsyncThunk("auth/login", async (credentials: LoginPay
       user: response.user,
     }
   } catch (error: any) {
+    const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials."
+    return rejectWithValue(errorMessage)
+  }
+})
+
+export const loginWithPrivy = createAsyncThunk("auth/login-privy", async (payload: LoginWithPrivyPayload, { rejectWithValue }) => {
+  try {
+    const response = await authService.loginWithPrivy(payload)
+
+    // Store token and user in AsyncStorage
+    await AsyncStorage.setItem("auth_token", response.accessToken)
+    await AsyncStorage.setItem("auth_user", JSON.stringify(response.user))
+
+    return {
+      token: response.accessToken,
+      user: response.user,
+    }
+  } catch (error: any) {
+    console.log('request error axios', error.response)
     const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials."
     return rejectWithValue(errorMessage)
   }
@@ -125,6 +144,22 @@ const authSlice = createSlice({
         state.loading = false
       })
       .addCase(login.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+      // Login with privy
+      .addCase(loginWithPrivy.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(loginWithPrivy.fulfilled, (state, action) => {
+        state.isAuthenticated = true
+        state.token = action.payload.token
+        state.user = action.payload.user
+        state.loading = false
+      })
+      .addCase(loginWithPrivy.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
       })

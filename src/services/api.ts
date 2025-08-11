@@ -5,7 +5,7 @@ import { logout } from "../store/slices/authSlice"
 
 // Update the base URL to point to the PICH backend API
 const api = axios.create({
-  baseURL: "http://10.0.2.2:3000/api", // Updated to match the API documentation base URL
+  baseURL: "http://157.180.71.47:3003/api", // Updated to match the API documentation base URL
   headers: {
     "Content-Type": "application/json",
   },

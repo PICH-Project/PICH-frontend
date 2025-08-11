@@ -15,6 +15,10 @@ export interface LoginPayload {
   password: string
 }
 
+export interface LoginWithPrivyPayload {
+  privyAccessToken: string | null;
+}
+
 export interface AuthResponse {
   user: UserProfile
   accessToken: string
@@ -77,6 +81,28 @@ const authService = {
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     try {
       const response = await api.post<AuthResponse>("/auth/login", payload)
+
+      // Store the token in AsyncStorage for future requests
+      if (response.data.accessToken) {
+        await AsyncStorage.setItem("auth_token", response.data.accessToken)
+        await AsyncStorage.setItem("auth_user", JSON.stringify(response.data.user))
+      }
+
+      return response.data
+    } catch (error) {
+      console.error("Login error:", error)
+      throw error
+    }
+  },
+
+  /**
+   * Login an existing user with privy access token, or create a new user
+   * @param payload User login with privy credentials
+   * @returns Promise with the authentication response
+   */
+  loginWithPrivy: async (payload: LoginWithPrivyPayload): Promise<AuthResponse> => {
+    try {
+      const response = await api.post<AuthResponse>("/auth/login-privy", payload)
 
       // Store the token in AsyncStorage for future requests
       if (response.data.accessToken) {

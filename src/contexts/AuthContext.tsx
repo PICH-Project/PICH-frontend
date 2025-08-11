@@ -6,13 +6,14 @@ import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "../store"
 import {
   login as loginAction,
+  loginWithPrivy as loginWithPrivyAction,
   register as registerAction,
   logout as logoutAction,
   fetchUserProfile,
   initAuth,
   clearError,
 } from "../store/slices/authSlice"
-import type { LoginPayload, RegisterPayload, UserProfile } from "../services/authService"
+import type { LoginPayload, LoginWithPrivyPayload, RegisterPayload, UserProfile } from "../services/authService"
 // Add this import at the top of the file
 import { clearUserProfile as clearUserProfileAction } from "../store/slices/userSlice"
 
@@ -23,6 +24,7 @@ interface AuthContextType {
   loading: boolean
   error: string | null
   login: (credentials: LoginPayload) => Promise<void>
+  loginWithPrivy: (payload: LoginWithPrivyPayload) => Promise<void>
   register: (userData: RegisterPayload) => Promise<void>
   logout: () => Promise<void>
   refreshUserProfile: () => Promise<void>
@@ -59,6 +61,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       //console.error("Login error:", error)
+      throw error
+    }
+  }
+
+  const loginWithPrivy = async (payload: LoginWithPrivyPayload) => {
+    try {
+      const result = await dispatch(loginWithPrivyAction(payload)).unwrap()
+      console.log("Login successful:", result)
+
+      // Explicitly fetch the user profile after login
+      if (result && result.token) {
+        console.log("Fetching user profile after login")
+        await dispatch(fetchUserProfile())
+      }
+    } catch (error) {
+      console.error("Login error in request backend:", error)
       throw error
     }
   }
@@ -120,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         error,
         login,
+        loginWithPrivy,
         register,
         logout,
         refreshUserProfile,
