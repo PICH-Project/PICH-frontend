@@ -101,9 +101,9 @@ const ScanScreen = () => {
 
   if (hasPermission === false) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: "#D9D9E6" }]}>
+      <SafeAreaView style={[styles.container]}>
         <Text>No access to camera</Text>
-        <TouchableOpacity style={[styles.button, { backgroundColor: "#4CD964" }]} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.textPrimary }]} onPress={() => navigation.goBack()}>
           <Text style={styles.buttonText}>Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -111,14 +111,14 @@ const ScanScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#D9D9E6" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: "#F1F0EA" }]}>
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#6C63FF" />
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Scan to Connect</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Scan</Text>
         <TouchableOpacity style={styles.menuButton}>
           <Ionicons name="menu" size={24} color="#1E1B4B" />
         </TouchableOpacity>
@@ -206,7 +206,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 24,
   },
   backButton: {
     width: 40,
@@ -217,7 +216,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1E1B4B",
   },
   menuButton: {
     width: 40,
@@ -228,13 +226,14 @@ const styles = StyleSheet.create({
   scanContainer: {
     flex: 1,
     marginHorizontal: 32,
-    marginTop: height * 0.05,
-    marginBottom: height * 0.1,
+    marginTop: height * 0.02,
+    paddingBottom: height * 0.05,
     borderRadius: 20,
     overflow: "hidden",
   },
   camera: {
     flex: 1,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },

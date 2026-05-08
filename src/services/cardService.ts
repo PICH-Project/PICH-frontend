@@ -2,11 +2,11 @@ import api from "./api"
 
 export interface Card {
   id: string
-  type: "BAC" | "PAC" | "VAC" | "CAC"
+  type: "BAC" | "PAC" | "VIPAC"
   name: string
   nickname: string
   avatar?: string
-  phone?: string
+  phones?: string[]
   email?: string
   social?: Record<string, string>
   isPrime: boolean
@@ -32,7 +32,7 @@ export interface CreateCardPayload {
   name: string
   nickname: string
   avatar?: string
-  phone?: string
+  phones?: string[]
   email?: string
   social?: Record<string, string>
   isPrime?: boolean
@@ -97,7 +97,7 @@ const cardService = {
         name: payload.name.trim(),
         nickname: payload.nickname.trim(),
         ...(payload.avatar && { avatar: payload.avatar }),
-        ...(payload.phone && { phone: payload.phone }),
+        ...(payload.phones && { phones: payload.phones }),
         ...(payload.email && { email: payload.email }),
         ...(payload.social && Object.keys(payload.social).length > 0 && { social: payload.social }),
         ...(payload.isPrime !== undefined && { isPrime: payload.isPrime }),

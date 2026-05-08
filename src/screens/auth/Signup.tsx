@@ -153,7 +153,7 @@ const SignupScreen = () => {
               {
                 color: colors.textSecondary,
                 fontFamily: typography.fontFamily.regular,
-                fontSize: typography.fontSize.lg,
+                fontSize: typography.fontSize.md,
               },
             ]}
           >
@@ -333,13 +333,20 @@ const SignupScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <Button title="Sign up" onPress={handleSignup} loading={loading} style={styles.signupButton} fullWidth />
+          <Button
+            title="Sign up"
+            onPress={handleSignup}
+            loading={loading}
+            style={styles.signupButton}
+            fullWidth
+            variant="yellow"
+          />
 
           <Text
             style={[
               styles.termsText,
               {
-                color: colors.textSecondary,
+                color: colors.textTertiary,
                 fontFamily: typography.fontFamily.regular,
                 fontSize: typography.fontSize.sm,
               },
@@ -352,6 +359,7 @@ const SignupScreen = () => {
                 {
                   color: colors.text,
                   fontFamily: typography.fontFamily.medium,
+                  textDecorationLine: 'underline',
                 },
               ]}
             >
@@ -364,6 +372,7 @@ const SignupScreen = () => {
                 {
                   color: colors.text,
                   fontFamily: typography.fontFamily.medium,
+                  textDecorationLine: 'underline',
                 },
               ]}
             >
@@ -393,19 +402,17 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 16,
   },
   logo: {
-    width: 150,
-    height: 60,
+    width: 240,
+    height: 80,
   },
   subtitle: {
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 16,
   },
   socialButtonsContainer: {
     marginBottom: 24,
@@ -439,6 +446,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 16,
+    backgroundColor: 'white',
   },
   eyeIcon: {
     position: "absolute",

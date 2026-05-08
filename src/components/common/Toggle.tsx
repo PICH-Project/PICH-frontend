@@ -26,6 +26,7 @@ const Toggle: React.FC<ToggleProps> = ({ label, description, value, onValueChang
               color: colors.text,
               fontFamily: typography.fontFamily.medium,
               fontSize: typography.fontSize.md,
+              fontWeight: 'bold',
             },
           ]}
         >

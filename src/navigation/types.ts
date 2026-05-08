@@ -6,6 +6,7 @@ export type StackParamList = {
     EditCard: undefined
     SetMainCard: undefined
     DeleteCard: undefined
+    CardConstructor: undefined
 }
   
 export type TabParamList = {

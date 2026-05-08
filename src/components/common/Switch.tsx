@@ -19,10 +19,11 @@ const Switch: React.FC<SwitchProps> = ({ value, onValueChange, disabled = false 
       onValueChange={onValueChange}
       disabled={disabled}
       trackColor={{
-        false: Platform.OS === "ios" ? "#E9E9EA" : "#767577",
-        true: colors.secondary,
+        false: colors.white,
+        true: colors.textTertiary,
       }}
-      thumbColor={Platform.OS === "ios" ? "#FFFFFF" : value ? colors.primary : "#F4F3F4"}
+      
+      thumbColor={Platform.OS === "ios" ? "#FFFFFF" : value ? colors.text : colors.textTertiary}
       ios_backgroundColor="#E9E9EA"
     />
   )

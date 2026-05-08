@@ -49,11 +49,11 @@ const SocialButton: React.FC<SocialButtonProps> = ({
   const getIconColor = () => {
     switch (provider) {
       case "google":
-        return "#FFCC4D"
+        return colors.primary
       case "facebook":
-        return "#FFCC4D"
+        return colors.primary
       default:
-        return "#FFCC4D"
+        return colors.primary
     }
   }
 
@@ -63,7 +63,7 @@ const SocialButton: React.FC<SocialButtonProps> = ({
         styles.button,
         {
           backgroundColor: colors.background,
-          borderColor: colors.border,
+          borderColor: colors.primary,
           borderWidth: 1,
         },
         style,
@@ -71,7 +71,7 @@ const SocialButton: React.FC<SocialButtonProps> = ({
       onPress={onPress}
     >
       {!!getIcon() && (
-        <Ionicons name={getIcon()} size={24} color={getIconColor()} style={styles.icon} />
+        <Ionicons name={getIcon() as any} size={18} color={getIconColor()} style={styles.icon} />
       )}
       <Text
         style={[
@@ -80,6 +80,7 @@ const SocialButton: React.FC<SocialButtonProps> = ({
             color: colors.text,
             fontFamily: typography.fontFamily.medium,
             fontSize: typography.fontSize.md,
+            fontWeight: 'bold'
           },
         ]}
       >

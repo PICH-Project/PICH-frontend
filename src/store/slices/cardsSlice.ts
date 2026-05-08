@@ -31,7 +31,7 @@ export const createCard = createAsyncThunk(
   "cards/createCard",
   async (cardData: CreateCardPayload, { rejectWithValue }) => {
     try {
-
+      console.log('cardData', cardData)
       const newCard = await cardService.createCard(cardData)
       // console.log("Card created successfully:", JSON.stringify(newCard, null, 2))
       return newCard

@@ -7,7 +7,7 @@ global.Buffer = Buffer;
 
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { StatusBar } from "expo-status-bar"
-import { NavigationContainer } from "@react-navigation/native"
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native"
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
 import { store, persistor } from "./src/store"
@@ -15,8 +15,13 @@ import AppNavigator from "./src/navigation"
 import { ThemeProvider } from "./src/hooks/useTheme"
 import { AuthProvider } from "./src/contexts/AuthContext"
 import PrivyProvider from './src/providers/PrivyProvider';
+import { useState } from 'react';
+
+const navigationRef = createNavigationContainerRef();
 
 export default function App() {
+  const [isNavReady, setIsNavReady] = useState<boolean>(false);
+
   return (
     <PrivyProvider>
       <Provider store={store}>
@@ -24,9 +29,15 @@ export default function App() {
           <ThemeProvider>
             <AuthProvider>
               <SafeAreaProvider>
-                <NavigationContainer>
+                <NavigationContainer
+                  ref={navigationRef}
+                  onReady={() => {
+                    console.log('ready ');
+                    setIsNavReady(true);
+                  }}
+                >
                   <StatusBar style="auto" />
-                  <AppNavigator />
+                  <AppNavigator isNavReady={isNavReady} navigationRef={navigationRef} />
                 </NavigationContainer>
               </SafeAreaProvider>
             </AuthProvider>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Image, StyleSheet, View, TouchableOpacity, ActivityIndicator } from "react-native"
+import { Image, StyleSheet, View, TouchableOpacity, ActivityIndicator, Text } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../hooks/useTheme"
 import * as ImagePicker from "expo-image-picker"
@@ -15,7 +15,7 @@ interface AvatarProps {
 }
 
 const Avatar: React.FC<AvatarProps> = ({ uri, size = 80, editable = false, onImageSelected }) => {
-  const { colors } = useTheme()
+  const { colors, typography } = useTheme()
   const [imageUri, setImageUri] = useState<string | null>(uri || null)
   const [loading, setLoading] = useState(false)
 
@@ -57,7 +57,9 @@ const Avatar: React.FC<AvatarProps> = ({ uri, size = 80, editable = false, onIma
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: imageUri ? "transparent" : colors.card,
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          borderColor: '#9B9B9B',
         },
       ]}
       onPress={pickImage}
@@ -77,23 +79,23 @@ const Avatar: React.FC<AvatarProps> = ({ uri, size = 80, editable = false, onIma
             },
           ]}
         />
-      ) : (
-        <Ionicons name="person" size={size * 0.5} color={colors.textSecondary} />
-      )}
-
-      {editable && (
-        <View
-          style={[
-            styles.editButton,
-            {
-              backgroundColor: colors.primary,
-              right: 0,
-              bottom: 0,
-            },
-          ]}
-        >
-          <Ionicons name="pencil" size={size * 0.2} color="#FFFFFF" />
-        </View>
+        ) : (
+          <>
+            <Ionicons name="image" size={size * 0.4} color={'#9B9B9B'} />
+            {editable && (
+              <Text
+                style={[
+                  {
+                    color: colors.text,
+                    fontFamily: typography.fontFamily.medium,
+                    fontSize: typography.fontSize.sm,
+                  },
+                ]}
+              >
+                Add photo
+              </Text>
+            )}
+          </>
       )}
     </TouchableOpacity>
   )

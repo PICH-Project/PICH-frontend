@@ -41,7 +41,7 @@ const SupportScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text
           style={[
@@ -49,15 +49,20 @@ const SupportScreen = () => {
             {
               color: colors.text,
               fontFamily: typography.fontFamily.bold,
-              fontSize: typography.fontSize.xl,
+              fontSize: typography.fontSize.xxl,
             },
           ]}
         >
           Contact Support
         </Text>
-        <TouchableOpacity>
-          <Ionicons name="menu" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={{ marginRight: 12 }}>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Ionicons name="menu" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -70,7 +75,8 @@ const SupportScreen = () => {
             {
               color: colors.text,
               fontFamily: typography.fontFamily.bold,
-              fontSize: typography.fontSize.xxxl,
+              fontSize: typography.fontSize.xxl,
+              fontWeight: 'bold',
             },
           ]}
         >
@@ -82,7 +88,7 @@ const SupportScreen = () => {
             {
               color: colors.textSecondary,
               fontFamily: typography.fontFamily.regular,
-              fontSize: typography.fontSize.md,
+              fontSize: typography.fontSize.sm,
             },
           ]}
         >
@@ -97,7 +103,8 @@ const SupportScreen = () => {
               style={[
                 styles.optionCard,
                 {
-                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
                 },
               ]}
               onPress={option.action}
@@ -105,12 +112,9 @@ const SupportScreen = () => {
               <View
                 style={[
                   styles.iconContainer,
-                  {
-                    backgroundColor: colors.secondary,
-                  },
                 ]}
               >
-                <Ionicons name={option.icon as any} size={24} color={colors.primary} />
+                <Ionicons name={option.icon as any} size={28} color={colors.primary} />
               </View>
               <Text
                 style={[
@@ -149,6 +153,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
+    justifyContent: 'center'
   },
   title: {
     textAlign: "center",
@@ -163,7 +168,8 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     borderRadius: 16,
-    padding: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",

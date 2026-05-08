@@ -7,13 +7,14 @@ import { useTheme } from "../../hooks/useTheme"
 interface ButtonProps {
   title: string
   onPress: () => void
-  variant?: "primary" | "secondary" | "outline"
+  variant?: "primary" | "secondary" | "outline" | "yellow"
   size?: "small" | "medium" | "large"
   disabled?: boolean
   loading?: boolean
   style?: ViewStyle
   textStyle?: TextStyle
   fullWidth?: boolean
+  rounded?: boolean
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -26,6 +27,7 @@ const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   fullWidth = false,
+  rounded = false,
 }) => {
   const { colors, typography } = useTheme()
 
@@ -35,7 +37,9 @@ const Button: React.FC<ButtonProps> = ({
 
     switch (variant) {
       case "primary":
-        return colors.primary
+        return colors.textPrimary
+      case "yellow":
+        return colors.accent
       case "secondary":
         return colors.secondary
       case "outline":
@@ -54,7 +58,8 @@ const Button: React.FC<ButtonProps> = ({
       case "secondary":
         return "#FFFFFF"
       case "outline":
-        return colors.primary
+      case "yellow":
+        return colors.textPrimary
       default:
         return "#FFFFFF"
     }
@@ -94,12 +99,13 @@ const Button: React.FC<ButtonProps> = ({
         styles.button,
         {
           backgroundColor: getBackgroundColor(),
-          borderColor: variant === "outline" ? colors.primary : "transparent",
-          borderWidth: variant === "outline" ? 1 : 0,
+          borderColor: variant === "outline" ? colors.textPrimary : "transparent",
+          borderWidth: variant === "outline" ? 2 : 0,
           width: fullWidth ? "100%" : "auto",
           ...getPadding(),
         },
         style,
+        rounded && styles.rounded,
       ]}
       onPress={onPress}
       disabled={disabled || loading}
@@ -114,6 +120,7 @@ const Button: React.FC<ButtonProps> = ({
               color: getTextColor(),
               fontSize: getFontSize(),
               fontFamily: typography.fontFamily.medium,
+              fontWeight: variant === 'yellow' ? 'bold' : 'semibold',
             },
             textStyle,
           ]}
@@ -131,6 +138,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
+  },
+  rounded: {
+    borderRadius: 100,
   },
   text: {
     textAlign: "center",

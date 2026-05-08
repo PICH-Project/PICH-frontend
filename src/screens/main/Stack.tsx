@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, FC, CSSProperties } from "react"
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import {
   Modal,
   Animated,
   Dimensions,
+  StyleProp,
+  ViewStyle,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
@@ -177,6 +179,7 @@ const StackScreen = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [filteredCards, setFilteredCards] = useState<CardGroup[]>([])
   const [isFolderEnabled, setIsFolderEnabled] = useState(false)
+  const [isFilterEnabled, setIsFilterEnabled] = useState(false)
   const [isStarEnabled, setIsStarEnabled] = useState(false)
   const [starredCards, setStarredCards] = useState<string[]>([]) // IDs of starred cards
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null)
@@ -240,7 +243,7 @@ const StackScreen = () => {
     } else {
       // Single section with all filtered cards
       if (filteredCards.length > 0) {
-        filtered.push({ title: "ALL CARDS", data: filteredCards })
+        filtered.push({ title: isStarEnabled ? "SELECTED" : "ALL CARDS", data: filteredCards })
       }
     }
 
@@ -248,19 +251,17 @@ const StackScreen = () => {
   }, [cards, searchQuery, isFolderEnabled, isStarEnabled, starredCards])
 
   const getCardTypeColor = (type: Card["type"]) => {
-    switch (type) {
-      case "BAC":
-        return "#4CD964" // Green
-      case "PAC":
-        return "#FFCC4D" // Yellow
-      case "VAC":
-        return "#FF6347" // Red
-      case "CAC":
-        return "#5AC8FA" // Blue
-      default:
-        return colors.secondary
+      switch (type) {
+        case "BAC":
+          return "#FFBC56"
+        case "PAC":
+          return "#97F09A"
+        case "VIPAC":
+          return "#FF6347" // Red
+        default:
+          return "#A5A1F5"
+      }
     }
-  }
 
   const handleCardPress = (cardId: string) => {
     console.log('cardId', cardId);
@@ -282,6 +283,14 @@ const StackScreen = () => {
   const toggleFolderButton = () => {
     setIsFolderEnabled(!isFolderEnabled)
     if (!isFolderEnabled) {
+      // If enabling folder, disable star
+      setIsStarEnabled(false)
+    }
+  }
+
+  const toggleFilterButton = () => {
+    setIsFilterEnabled(!isFilterEnabled)
+    if (!isFilterEnabled) {
       // If enabling folder, disable star
       setIsStarEnabled(false)
     }
@@ -358,7 +367,7 @@ const StackScreen = () => {
     >
       <View style={styles.cardContainer}>
         <View style={[styles.cardTypeBadge, { backgroundColor: getCardTypeColor(item.type) }]}>
-          <Text style={styles.cardTypeText}>{item.type}</Text>
+          <Text style={[styles.cardTypeText, item.type === 'PAC' && { color: colors.textPrimary }]}>{item.type}</Text>
         </View>
 
         <View style={styles.cardContent}>
@@ -379,7 +388,7 @@ const StackScreen = () => {
             onPress={(event) => handleCall(item.id, event)}
             disabled={deletingCardId === item.id}
           >
-            <Ionicons name="call-outline" size={24} color="#000000" />
+            <Ionicons name="call" size={24} color="#000000" />
           </TouchableOpacity>
         </View>
 
@@ -403,7 +412,7 @@ const StackScreen = () => {
   )
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#FFFFFF" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: "#F1F0EA" }]}>
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.headerContainer}>
@@ -416,7 +425,7 @@ const StackScreen = () => {
 
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
-            <Ionicons name="search-outline" size={20} color="#888888" style={styles.searchIcon} />
+            <Ionicons name="search-outline" size={20} color="#CDCDCD" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search"
@@ -425,22 +434,30 @@ const StackScreen = () => {
               onChangeText={setSearchQuery}
             />
             <TouchableOpacity style={styles.micButton}>
-              <Ionicons name="mic-outline" size={20} color="#888888" />
+              <Ionicons name="mic" size={24} color="#CDCDCD" />
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[styles.folderButton, isFilterEnabled && styles.buttonEnabled]}
+            onPress={toggleFilterButton}
+          >
+            <Ionicons name="funnel" size={24} color={isFilterEnabled ? "#000000" : "#CDCDCD"} />
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.folderButton, isFolderEnabled && styles.buttonEnabled]}
             onPress={toggleFolderButton}
           >
-            <Ionicons name="folder-outline" size={24} color={isFolderEnabled ? "#000000" : "#888888"} />
+            <Ionicons name="folder" size={24} color={isFolderEnabled ? "#000000" : "#CDCDCD"} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.starButton, isStarEnabled && styles.buttonEnabled]}
             onPress={toggleStarButton}
           >
-            <Ionicons name="star" size={24} color={isStarEnabled ? "#000000" : "#FFCC4D"} />
+            <Ionicons name="star" size={24} color={isStarEnabled ? "#000000" : "#CDCDCD"} />
+            {/* <StarIcon style={{ color: 'white', }} /> */}
           </TouchableOpacity>
         </View>
       </View>
@@ -475,7 +492,6 @@ const StackScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   loadingContainer: {
     flex: 1,
@@ -499,11 +515,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 24,
+    marginTop: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
+    fontSize: 25,
+    fontWeight: "medium",
     color: "#000000",
   },
   menuButton: {
@@ -516,7 +532,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginTop: 8,
   },
   searchInputContainer: {
     flex: 1,
@@ -524,7 +539,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 48,
     backgroundColor: "#F5F5F5",
-    borderRadius: 24,
+    borderRadius: 8,
     paddingHorizontal: 16,
   },
   searchIcon: {
@@ -537,15 +552,15 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   micButton: {
-    width: 40,
-    height: 40,
+    width: 24,
+    height: 24,
     justifyContent: "center",
     alignItems: "center",
   },
   folderButton: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 8,
     backgroundColor: "#F5F5F5",
     justifyContent: "center",
     alignItems: "center",
@@ -554,7 +569,7 @@ const styles = StyleSheet.create({
   starButton: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 8,
     backgroundColor: "#F5F5F5",
     justifyContent: "center",
     alignItems: "center",
@@ -590,14 +605,14 @@ const styles = StyleSheet.create({
     position: "relative",
     borderRadius: 12,
     backgroundColor: "#FFFFFF",
-    minHeight: 80,
+    minHeight: 60,
     overflow: "hidden", // This ensures the badge doesn't overflow the card's border radius
   },
   cardTypeBadge: {
     position: "absolute",
     left: 0,
     top: 0,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderTopLeftRadius: 12, // Match the card's top-left border radius
     borderBottomRightRadius: 12, // Only round the bottom-right corner
@@ -606,17 +621,18 @@ const styles = StyleSheet.create({
   cardTypeText: {
     color: "#FFFFFF",
     fontWeight: "bold",
-    fontSize: 12,
+    fontSize: 11,
   },
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
     minHeight: 80, // Ensure consistent height for all cards
   },
   avatar: {
-    width: 48,
-    height: 48,
+    width: 32,
+    height: 32,
     borderRadius: 24,
   },
   avatarDeleting: {

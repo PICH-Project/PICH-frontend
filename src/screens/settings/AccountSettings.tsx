@@ -515,6 +515,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
   },
   rowInputs: {
     flexDirection: "row",
@@ -528,6 +529,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: '#FFFFFF',
   },
   dateInput: {
     height: 56,
@@ -537,6 +539,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: '#FFFFFF',
   },
   phoneInputContainer: {
     flexDirection: "row",
@@ -548,6 +551,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
   },
   addPhoneButton: {
     width: 56,

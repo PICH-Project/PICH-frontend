@@ -18,25 +18,8 @@ const SignOutScreen = () => {
   const { loading } = useSelector((state: RootState) => state.auth)
 
   const handleSignOut = () => {
-    Alert.alert(
-      "Confirm Sign Out",
-      "Are you sure you want to sign out?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Sign Out",
-          style: "destructive",
-          onPress: () => {
-            dispatch(logout())
-            logoutPrivy();
-          },
-        },
-      ],
-      { cancelable: true },
-    )
+    dispatch(logout())
+    logoutPrivy();
   }
 
   const handleCancel = () => {
@@ -72,7 +55,7 @@ const SignOutScreen = () => {
           style={[
             styles.title,
             {
-              color: colors.text,
+              color: colors.textPrimary,
               fontFamily: typography.fontFamily.bold,
               fontSize: typography.fontSize.xxxl,
             },
@@ -84,7 +67,7 @@ const SignOutScreen = () => {
           style={[
             styles.subtitle,
             {
-              color: colors.text,
+              color: colors.textPrimary,
               fontFamily: typography.fontFamily.bold,
               fontSize: typography.fontSize.xxl,
             },
@@ -93,7 +76,14 @@ const SignOutScreen = () => {
           Are you sure?
         </Text>
         <View style={styles.buttonsContainer}>
-          <Button title="Neah, Just Kidding" variant="primary" onPress={handleCancel} style={styles.button} fullWidth />
+          <Button
+            title="Neah, Just Kidding"
+            variant="primary"
+            onPress={handleCancel}
+            style={styles.button}
+            fullWidth
+            rounded
+          />
           <Button
             title="Yes, Log Me Out"
             variant="outline"
@@ -101,6 +91,7 @@ const SignOutScreen = () => {
             loading={loading}
             style={styles.button}
             fullWidth
+            rounded
           />
         </View>
       </View>

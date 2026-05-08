@@ -190,9 +190,14 @@ const AppSettingsScreen = () => {
         >
           Application settings
         </Text>
-        <TouchableOpacity>
-          <Ionicons name="menu" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={{ marginRight: 12 }}>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Ionicons name="menu" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -200,7 +205,7 @@ const AppSettingsScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.profileSection}>
-          <Avatar uri={profile?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={80} />
+          <Avatar uri={profile?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={60} />
           <View style={styles.profileInfo}>
             {loading ? (
               <ActivityIndicator size="small" color={colors.primary} />
@@ -213,6 +218,7 @@ const AppSettingsScreen = () => {
                       color: colors.text,
                       fontFamily: typography.fontFamily.bold,
                       fontSize: typography.fontSize.xl,
+                      fontWeight: 'bold',
                     },
                   ]}
                 >
@@ -237,13 +243,13 @@ const AppSettingsScreen = () => {
             style={[
               styles.editButton,
               {
-                backgroundColor: colors.secondary,
+                backgroundColor: colors.primary,
               },
             ]}
             onPress={handleEditPress}
             disabled={loading || !profile}
           >
-            <Ionicons name="pencil" size={20} color={colors.primary} />
+            <Ionicons name="pencil" size={16} color={colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -285,6 +291,7 @@ const AppSettingsScreen = () => {
                   color: colors.text,
                   fontFamily: typography.fontFamily.medium,
                   fontSize: typography.fontSize.md,
+                  fontWeight: 'bold'
                 },
               ]}
             >
@@ -306,7 +313,7 @@ const AppSettingsScreen = () => {
               style={[
                 styles.dropdown,
                 {
-                  borderColor: colors.border,
+                  borderColor: colors.primary,
                 },
               ]}
             >
@@ -340,7 +347,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 24,
   },
   headerTitle: {
     textAlign: "center",
@@ -352,7 +358,7 @@ const styles = StyleSheet.create({
   profileSection: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 32,
+    marginVertical: 40,
   },
   profileInfo: {
     flex: 1,
@@ -363,8 +369,8 @@ const styles = StyleSheet.create({
   },
   profileUsername: {},
   editButton: {
-    width: 40,
-    height: 40,
+    width: 26,
+    height: 26,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
@@ -374,6 +380,7 @@ const styles = StyleSheet.create({
   },
   dropdownSection: {
     marginTop: 16,
+    marginBottom: 32,
   },
   dropdownLabel: {
     marginBottom: 4,
@@ -389,6 +396,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: 'white',
   },
   modalContainer: {
     flex: 1,

@@ -113,7 +113,11 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.logoContainer}>
-            <Image source={require("../../../assets/logo.png")} style={styles.logo} resizeMode="contain" />
+            <Image
+              source={require("../../../assets/logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
 
           <Text
@@ -122,7 +126,7 @@ const LoginScreen = () => {
               {
                 color: colors.textSecondary,
                 fontFamily: typography.fontFamily.regular,
-                fontSize: typography.fontSize.lg,
+                fontSize: typography.fontSize.md,
               },
             ]}
           >
@@ -220,13 +224,20 @@ const LoginScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <Button title="Login" onPress={handleLogin} loading={loading} style={styles.loginButton} fullWidth />
+          <Button
+            title="Login"
+            onPress={handleLogin}
+            loading={loading}
+            style={styles.loginButton}
+            fullWidth
+            variant="yellow"
+          />
 
           <Text
             style={[
               styles.termsText,
               {
-                color: colors.textSecondary,
+                color: colors.textTertiary,
                 fontFamily: typography.fontFamily.regular,
                 fontSize: typography.fontSize.sm,
               },
@@ -237,8 +248,9 @@ const LoginScreen = () => {
               style={[
                 styles.termsLink,
                 {
-                  color: colors.text,
+                  color: colors.primary,
                   fontFamily: typography.fontFamily.medium,
+                  textDecorationLine: 'underline'
                 },
               ]}
             >
@@ -249,8 +261,9 @@ const LoginScreen = () => {
               style={[
                 styles.termsLink,
                 {
-                  color: colors.text,
+                  color: colors.primary,
                   fontFamily: typography.fontFamily.medium,
+                  textDecorationLine: 'underline'
                 },
               ]}
             >
@@ -280,19 +293,18 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 0,
   },
   logo: {
-    width: 150,
-    height: 60,
+    width: 240,
+    height: 80,
   },
   subtitle: {
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 16,
   },
   socialButtonsContainer: {
     marginBottom: 24,
@@ -322,6 +334,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 16,
+    backgroundColor: 'white',
   },
   eyeIcon: {
     position: "absolute",

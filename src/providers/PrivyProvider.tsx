@@ -1,4 +1,3 @@
-import Config from 'react-native-config'
 import { PrivyProvider as PrivyProviderImpl } from '@privy-io/expo';
 import { FC } from 'react';
 import { ConfigVariables } from '@/constants/configVariables';

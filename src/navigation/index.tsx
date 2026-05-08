@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { FC, useState } from "react"
 
 import { useEffect } from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
@@ -14,13 +14,15 @@ import { fetchConnections, fetchFriends } from "../store/slices/connectionsSlice
 import { fetchSettings } from "../store/slices/settingsSlice"
 import { initAuth } from "../store/slices/authSlice"
 import SplashScreen from "../screens/SplashScreen"
+import { NavigationContainerRefWithCurrent } from "@react-navigation/native"
 
 const RootStack = createNativeStackNavigator()
 
-const AppNavigator = () => {
+const AppNavigator: FC<IProps> = () => {
   const { isAuthenticated, loading: authLoading } = useSelector((state: RootState) => state.auth)
   const dispatch = useDispatch<AppDispatch>()
   const [isInitializing, setIsInitializing] = useState(true)
+  
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -47,8 +49,37 @@ const AppNavigator = () => {
 
       // Fetch user's settings
       dispatch(fetchSettings())
+
+      //handleAuthenticatedUser();
+
+      // const timer = setTimeout(() => {
+      //     navigationRef.navigate('Main', {
+      //       screen: 'Stack',
+      //       params: {
+      //         screen: 'CardDetail',
+      //         params: { cardId: '29635cf8-36ff-45d9-afcb-b7e71f66f405' },
+      //       },
+      //     });
+      //     console.log('redirect1k ready      ', navigationRef.isReady(), isNavReady)
+      // }, 0); // next tick after Main is rendered
+
+      // return () => clearTimeout(timer);
     }
   }, [isAuthenticated, dispatch])
+
+  // useEffect(() => {
+  //   if (isAuthenticated && navigationRef.isReady()) {
+  //     console.log('redirect1k  123  ', navigationRef.navigate)
+  //     navigationRef.navigate("Main", {
+  //       screen: "Stack",
+  //       params: {
+  //         screen: "CardDetail",
+  //         params: { cardId: "29635cf8-36ff-45d9-afcb-b7e71f66f405" },
+  //       },
+  //     })
+  //     console.log('below122 ')
+  //   }
+  // }, [isAuthenticated, navigationRef.isReady()])
 
   // Show splash screen while initializing
   if (isInitializing || authLoading) {
@@ -64,6 +95,11 @@ const AppNavigator = () => {
       )}
     </RootStack.Navigator>
   )
+}
+
+interface IProps {
+  navigationRef: NavigationContainerRefWithCurrent<any>;
+  isNavReady: boolean;
 }
 
 export default AppNavigator

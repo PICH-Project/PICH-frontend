@@ -19,12 +19,14 @@ import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import { fetchUserQRCode, refreshUserQRCode } from "../../services/qrService"
 import * as FileSystem from "expo-file-system"
 import * as Sharing from "expo-sharing"
+import { useTheme } from "@/hooks/useTheme"
 
 const ShareScreen = () => {
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const tabBarHeight = useTabBarHeight()
+  const { colors } = useTheme()
 
   // Function to load the QR code
   const loadQRCode = useCallback(async () => {
@@ -106,7 +108,7 @@ const ShareScreen = () => {
   const isValidQRCode = qrCode && qrCode.startsWith("data:image")
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: "#F1F0EA" }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -117,7 +119,7 @@ const ShareScreen = () => {
       >
         {/* Update the header title and subtitle */}
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>Connect with Others</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Connect with Others</Text>
           <Text style={styles.subtitle}>Let others scan your QR code to add you as a friend</Text>
         </View>
 
@@ -190,7 +192,6 @@ const ShareScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F7",
   },
   scrollView: {
     flex: 1,
@@ -277,8 +278,8 @@ const styles = StyleSheet.create({
   actionsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginTop: 24,
     marginBottom: 32,
+    marginTop: 24,
   },
   actionButton: {
     backgroundColor: "#FFCC4D",
