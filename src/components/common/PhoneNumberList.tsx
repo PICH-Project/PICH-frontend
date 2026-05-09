@@ -25,7 +25,14 @@ interface PhoneNumberListProps {
   phoneNumbers: string[]
   onChange: (numbers: string[]) => void
   maxLength?: number
+  /** Максимальна кількість номерів. Коли досягнутий — кнопка "+" заблокована. */
+  maxItems?: number
   placeholder?: string
+  /**
+   * Темний режим — для рендерингу на чорному фоні (наприклад VIPAC-картка).
+   * Прозорий контейнер з білим текстом, підлаштовується під фон-парент.
+   */
+  darkMode?: boolean
 }
 
 const UkrainianFlag = () => (
@@ -45,13 +52,18 @@ const PhoneNumberList: React.FC<PhoneNumberListProps> = ({
   phoneNumbers,
   onChange,
   maxLength = 250,
+  maxItems,
   placeholder = "(12) 345 67 89*",
+  darkMode = false,
 }) => {
   const [currentInput, setCurrentInput] = useState("")
   const [isExpanded, setIsExpanded] = useState(false)
   const [rotateAnim] = useState(new Animated.Value(0))
 
+  const isAtMaxItems = typeof maxItems === "number" && phoneNumbers.length >= maxItems
+
   const handleAddNumber = () => {
+    if (isAtMaxItems) return
     if (currentInput.trim().length > 0) {
       const newNumbers = [...phoneNumbers, currentInput.trim()]
       onChange(newNumbers)
@@ -87,26 +99,60 @@ const PhoneNumberList: React.FC<PhoneNumberListProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Main Input Container */}
-      <View style={styles.inputContainer}>
+      {/* Main Input Container — підлаштовується під dark/light тему.
+          Border на dark — мінімальний, щоб не виділявся серед інших інпутів. */}
+      <View
+        style={[
+          styles.inputContainer,
+          darkMode && {
+            backgroundColor: "transparent",
+            // Той самий border-color, що й інші інпути форми (colors.border = "#E5E5E5")
+            borderColor: "#E5E5E5",
+          },
+        ]}
+      >
 
         {/* Input Row */}
-        <View style={styles.inputRow}>
+        <View
+          style={[
+            styles.inputRow,
+            // На dark прибираємо вертикальний divider між prefix і input —
+            // він робить контейнер "багатоскладовим" на тлі простих інпутів вище.
+            darkMode && { },
+          ]}
+        >
           {/* Flag and Prefix (Static) */}
-          <View style={styles.prefixContainer}>
+          <View
+            style={[
+              styles.prefixContainer,
+              darkMode && { borderRightColor: "transparent" },
+            ]}
+          >
             <UkrainianFlag />
-            <Text style={[styles.prefixText, { borderWidth: 1, borderRadius: 4, padding: 4, borderColor: "#71706A" }]}>
+            <Text
+              style={[
+                styles.prefixText,
+                darkMode
+                  ? { color: "#FFFFFF" }
+                  : {
+                      borderWidth: 1,
+                      borderRadius: 4,
+                      padding: 4,
+                      borderColor: "#71706A",
+                    },
+              ]}
+            >
               +380
             </Text>
           </View>
 
           {/* Phone Input */}
           <TextInput
-            style={styles.input}
+            style={[styles.input, darkMode && { color: "#FFFFFF" }]}
             value={currentInput}
             onChangeText={setCurrentInput}
             placeholder={placeholder}
-            placeholderTextColor="#71706A"
+            placeholderTextColor={darkMode ? "#CFCAC4" : "#71706A"}
             keyboardType="phone-pad"
             maxLength={maxLength - phoneNumbers.join("").length}
           />
@@ -114,36 +160,99 @@ const PhoneNumberList: React.FC<PhoneNumberListProps> = ({
           {/* Chevron Down Button */}
           <TouchableOpacity style={styles.iconButton} onPress={toggleExpanded} disabled={phoneNumbers.length === 0}>
             <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-              <Ionicons name="chevron-down" size={20} color={phoneNumbers.length === 0 ? "#CCCCCC" : "#666666"} />
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={
+                  phoneNumbers.length === 0
+                    ? darkMode
+                      ? "#5C5750"
+                      : "#CCCCCC"
+                    : darkMode
+                      ? "#FFFFFF"
+                      : "#666666"
+                }
+              />
             </Animated.View>
           </TouchableOpacity>
 
-          {/* Plus Button */}
-          <TouchableOpacity
-            style={[
-              styles.iconButton,
-              styles.plusButton,
-              currentInput.trim().length === 0 && styles.plusButtonDisabled,
-            ]}
-            onPress={handleAddNumber}
-            disabled={currentInput.trim().length === 0}
-          >
-            <Ionicons name="add" size={24} color={currentInput.trim().length === 0 ? "#CCCCCC" : "#FFFFFF"} />
-          </TouchableOpacity>
+          {/* Plus Button.
+              Active light:    жовтий фон + білий плюс.
+              Active dark:     жовтий фон + чорний плюс.
+              Disabled light:  світло-сірий фон + ще світліший плюс.
+              Disabled dark:   ледь видимий темний фон + приглушений плюс
+                               (щоб не бликала яскрава пляма на чорній картці). */}
+          {(() => {
+            const disabled = currentInput.trim().length === 0 || isAtMaxItems
+            const bg = disabled
+              ? darkMode
+                ? "rgba(255,255,255,0.06)"
+                : "#E0E0E0"
+              : "#FFCC4D"
+            const iconColor = disabled
+              ? darkMode
+                ? "#5C5750"
+                : "#CCCCCC"
+              : darkMode
+                ? "#000000"
+                : "#FFFFFF"
+            return (
+              <TouchableOpacity
+                style={[styles.iconButton, styles.plusButton, { backgroundColor: bg }]}
+                onPress={handleAddNumber}
+                disabled={disabled}
+              >
+                <Ionicons name="add" size={24} color={iconColor} />
+              </TouchableOpacity>
+            )
+          })()}
         </View>
       </View>
 
-      {/* Phone Numbers List */}
+      {/* Phone Numbers List — expanded dropdown.
+          Dark: card-like темний контейнер з тонким border'ом і темними item-ами.
+          Light: дефолтний світлий вигляд. */}
       {isExpanded && phoneNumbers.length > 0 && (
-        <View style={styles.listContainer}>
+        <View
+          style={[
+            styles.listContainer,
+            darkMode && {
+              backgroundColor: "#21201C",
+              borderWidth: 1,
+              borderColor: "#E5E5E5",
+            },
+          ]}
+        >
           {phoneNumbers.map((number, index) => (
-            <View key={index} style={styles.listItem}>
+            <View
+              key={index}
+              style={[
+                styles.listItem,
+                darkMode && {
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                },
+              ]}
+            >
               <View style={styles.listItemContent}>
                 <View style={styles.listItemPrefix}>
                   <UkrainianFlag />
-                  <Text style={styles.listItemPrefixText}>+380</Text>
+                  <Text
+                    style={[
+                      styles.listItemPrefixText,
+                      darkMode && { color: "#FFFFFF" },
+                    ]}
+                  >
+                    +380
+                  </Text>
                 </View>
-                <Text style={styles.listItemNumber}>{number}</Text>
+                <Text
+                  style={[
+                    styles.listItemNumber,
+                    darkMode && { color: "#FFFFFF" },
+                  ]}
+                >
+                  {number}
+                </Text>
               </View>
               <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveNumber(index)}>
                 <Ionicons name="close-circle" size={20} color="#FF3B30" />

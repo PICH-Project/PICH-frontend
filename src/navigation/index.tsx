@@ -10,9 +10,17 @@ import AuthNavigator from "./AuthNavigator"
 import MainNavigator from "./MainNavigator"
 import { fetchUserProfile } from "../store/slices/authSlice"
 import { fetchCards } from "../store/slices/cardsSlice"
-import { fetchConnections, fetchFriends } from "../store/slices/connectionsSlice"
+import {
+  fetchConnections,
+  fetchFriends,
+  fetchConnectedCards,
+} from "../store/slices/connectionsSlice"
 import { fetchSettings } from "../store/slices/settingsSlice"
 import { initAuth } from "../store/slices/authSlice"
+import {
+  fetchAllSubscriptions,
+  fetchUserLimits,
+} from "../store/slices/subscriptionsSlice"
 import SplashScreen from "../screens/SplashScreen"
 import { NavigationContainerRefWithCurrent } from "@react-navigation/native"
 
@@ -43,12 +51,17 @@ const AppNavigator: FC<IProps> = () => {
       // Fetch user's cards
       dispatch(fetchCards())
 
-      // Fetch user's connections and friends
+      // Fetch user's connections + connected cards (чужі)
       dispatch(fetchConnections())
       dispatch(fetchFriends())
+      dispatch(fetchConnectedCards())
 
       // Fetch user's settings
       dispatch(fetchSettings())
+
+      // Fetch user's active subscriptions + combined limits
+      dispatch(fetchAllSubscriptions())
+      dispatch(fetchUserLimits())
 
       //handleAuthenticatedUser();
 

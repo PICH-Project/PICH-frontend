@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import authService, { LoginWithPrivyPayload, type LoginPayload, type RegisterPayload, type UserProfile } from "../../services/authService"
+import { clearMobileWalletCache } from "../../features/solana/useMobileWallet"
 
 interface AuthState {
   isAuthenticated: boolean
@@ -109,6 +110,10 @@ export const logout = createAsyncThunk("auth/logout", async () => {
   // Remove token and user from AsyncStorage
   await AsyncStorage.removeItem("auth_token")
   await AsyncStorage.removeItem("auth_user")
+
+  // Очистити кеш MWA (Solana wallet auth_token), щоб наступний юзер не
+  // успадкував попередню авторизацію.
+  await clearMobileWalletCache()
 
   return null
 })

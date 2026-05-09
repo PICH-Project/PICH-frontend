@@ -144,7 +144,7 @@ const LoginScreen = () => {
 
           <View style={styles.socialButtonsContainer}>
             <SocialButton provider="google" onPress={handleGoogleLogin} />
-            <SocialButton provider="facebook" onPress={handleFacebookLogin} />
+            {/* <SocialButton provider="facebook" onPress={handleFacebookLogin} /> */}
           </View>
 
           <View style={styles.dividerContainer}>

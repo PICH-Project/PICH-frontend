@@ -19,6 +19,7 @@ import type { RootState, AppDispatch } from "../../store"
 import { fetchCards } from "../../store/slices/cardsSlice"
 import type { Card } from "../../services/cardService"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const EditCardScreen = () => {
   const navigation = useNavigation()
@@ -26,6 +27,7 @@ const EditCardScreen = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { cards, loading } = useSelector((state: RootState) => state.cards)
   const tabBarHeight = useTabBarHeight()
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     dispatch(fetchCards())
@@ -37,10 +39,8 @@ const EditCardScreen = () => {
         return "#4CD964"
       case "PAC":
         return "#FFCC4D"
-      case "VAC":
-        return "#FF6347"
-      case "CAC":
-        return "#5AC8FA"
+      case "VIPAC":
+        return "#FF6459"
       default:
         return colors.secondary
     }
@@ -99,7 +99,7 @@ const EditCardScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -127,7 +127,7 @@ const EditCardScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>

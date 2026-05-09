@@ -11,19 +11,17 @@ import SettingsNavigator from "./SettingsNavigator"
 import { View, Text, StyleSheet, Platform, Dimensions, TouchableOpacity } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { TabParamList, StackParamList } from "./types"
-import CreateCardScreen from "../screens/main/CreateCard"
 import EditCardScreen from "../screens/main/EditCard"
 import SetMainCardScreen from "../screens/main/SetMainCard"
 import DeleteCardScreen from "../screens/main/DeleteCard"
 import AccountScreen from "@/screens/main/Account"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { getFocusedRouteNameFromRoute, useNavigation, useRoute } from "@react-navigation/native"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import Svg, { Path } from "react-native-svg"
 import CreateCardNewScreen from "@/screens/main/CreateCardNew"
 import CardConstructorScreen from "@/screens/main/CardConstructor"
-import { Card } from "@/services/cardService"
 
 const Tab = createBottomTabNavigator<TabParamList>()
 const Stack = createNativeStackNavigator<StackParamList>()
@@ -104,23 +102,14 @@ const TabBarCenterBump = () => (
 
 // Stack navigator for the Stack tab
 const StackNavigator = () => {
-  const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const [rendered, setRendered] = useState<boolean>(false);
-  const cards = useSelector((state: RootState) => 
-      (state.cards.cards as Card[]))
 
-
-  useEffect(() => {
-    setRendered(true);
-  }, []);
-
-  useEffect(() => {
-    if (rendered && !!cards.length) {
-      navigation.navigate('CardDetail', { cardId: null }); 
-    }
-}, [rendered]);
-
+  // NOTE: раніше тут був useEffect, що автоматично редіректив на CardDetail з
+  // `cardId: null` після першого рендеру. Це ламало нормальну навігацію
+  // (наприклад, з Account → CardConstructor — юзера відразу перекидало на
+  // CardDetail з невалідним cardId, що крашило компонент). Якщо потрібно
+  // показувати першу картку при переході на Stack-таб — обробляти це треба
+  // у StackScreen самій, а не на рівні навігатора.
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, }}>

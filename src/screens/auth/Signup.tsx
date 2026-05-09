@@ -171,7 +171,7 @@ const SignupScreen = () => {
 
           <View style={styles.socialButtonsContainer}>
             <SocialButton provider="google" onPress={handleGoogleSignup} />
-            <SocialButton provider="facebook" onPress={handleFacebookSignup} />
+            {/* <SocialButton provider="facebook" onPress={handleFacebookSignup} /> */}
           </View>
 
           <View style={styles.dividerContainer}>

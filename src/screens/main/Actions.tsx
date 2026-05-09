@@ -12,6 +12,7 @@ import type { RootState } from "../../store"
 import type { StackParamList } from "../../navigation/types"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import Svg, { Path } from "react-native-svg"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 type ActionsNavigationProp = NativeStackNavigationProp<StackParamList, "Actions">
 type ActionsRouteProp = RouteProp<StackParamList, "Actions">
@@ -83,6 +84,7 @@ const ActionsScreen = () => {
   const navigation = useNavigation<ActionsNavigationProp>()
   const route = useRoute<ActionsRouteProp>()
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   const { cardId } = route.params || {}
 
   // Get card details if cardId is provided
@@ -169,13 +171,13 @@ const ActionsScreen = () => {
         styles.container,
         {
           // Add padding for tab bar
-          backgroundColor: "#F1F0EA",
+          backgroundColor: colors.background,
         },
       ]}
     >
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.headerContainer}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>

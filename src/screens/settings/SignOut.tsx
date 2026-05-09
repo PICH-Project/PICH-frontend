@@ -9,6 +9,7 @@ import { logout } from "../../store/slices/authSlice"
 import type { AppDispatch, RootState } from "../../store"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import { usePrivy } from "@privy-io/expo"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const SignOutScreen = () => {
   const { logout: logoutPrivy } = usePrivy();
@@ -16,6 +17,7 @@ const SignOutScreen = () => {
   const { colors, typography } = useTheme()
   const dispatch = useDispatch<AppDispatch>()
   const { loading } = useSelector((state: RootState) => state.auth)
+  const insets = useSafeAreaInsets()
 
   const handleSignOut = () => {
     dispatch(logout())
@@ -28,7 +30,7 @@ const SignOutScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>

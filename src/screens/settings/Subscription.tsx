@@ -1,76 +1,232 @@
 "use client"
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native"
+import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  AppState,
+  Linking,
+} from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
+import { useDispatch, useSelector } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
-import Svg, { Path } from "react-native-svg"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { YellowCrownIcon as CrownIcon } from "../../components/icons"
+import type { AppDispatch, RootState } from "../../store"
+import {
+  fetchActivePlans,
+  fetchAllSubscriptions,
+  selectActivePlanCodes,
+  selectHasVip,
+} from "../../store/slices/subscriptionsSlice"
+import paymentsService from "../../services/paymentsService"
+import {
+  PlanCode,
+  PLAN_DISPLAY,
+  formatPlanFeatures,
+} from "../../constants/subscriptions"
+import type { SubscriptionPlan } from "../../services/subscriptionService"
 
-interface PlanFeature {
-  id: string
-  title: string
+/**
+ * Спробувати відкрити URL у wallet'у через universal link.
+ * Перебираємо deeplinks за пріоритетом, fallback — system-browser.
+ *
+ * Ми працюємо тільки з Solana → Phantom є основним. MetaMask лишаємо як
+ * fallback для юзерів які чомусь захочуть EVM-варіант (бек поки що Solana).
+ */
+async function openInWallet(paymentUrl: string) {
+  const cleanUrl = paymentUrl.replace(/^https?:\/\//, "")
+  const encodedUrl = encodeURIComponent(paymentUrl)
+  const encodedRef = encodeURIComponent("https://pich.app")
+
+  const candidates = [
+    // Phantom universal link — для Solana flow
+    `https://phantom.app/ul/browse/${encodedUrl}/${encodedRef}`,
+    // Fallback — звичайний браузер
+    paymentUrl,
+  ]
+
+  for (const link of candidates) {
+    try {
+      const supported = await Linking.canOpenURL(link)
+      if (supported) {
+        await Linking.openURL(link)
+        return true
+      }
+    } catch {
+      // try next
+    }
+  }
+  return false
 }
 
-interface SubscriptionPlan {
-  id: string
-  title: string
-  priceMonthly: number
-  priceYearly?: number
-  features: PlanFeature[]
-  isCurrent?: boolean
-  backgroundColor?: string
-  showCrown?: boolean
-}
-
+/**
+ * SubscriptionScreen
+ *
+ * Показує список усіх активних планів з бека (`/subscriptions/plans`).
+ * Підтримує:
+ *  - "Current" бейдж для активних планів юзера (PRIMARY + ADDON).
+ *  - Subscribe-кнопку, disabled якщо план уже активний або не може бути куплений
+ *    у поточному стані (наприклад, Premium коли вже є VIP).
+ *  - Опис плану з бекенду (`plan.description`).
+ *  - Список фічей, побудований з `plan.features` за форматером з constants.
+ *
+ * TODO (phase 2): При натисканні Subscribe — відкривати Solana wallet через
+ * `useMobileWallet` (див. src/features/solana/useMobileWallet.ts), просити
+ * подпис мокової транзи / повідомлення, після повернення дергати backend і
+ * оновлювати стейт. Бек має додати ендпоінт для покупки BUSINESS/VIP — зараз
+ * є лише `POST /subscriptions/premium`.
+ */
 const SubscriptionScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
+  const insets = useSafeAreaInsets()
+  const tabBarHeight = useTabBarHeight()
+  const dispatch = useDispatch<AppDispatch>()
 
-  const plans: SubscriptionPlan[] = [
-    {
-      id: "premium",
-      title: "PREMIUM",
-      priceMonthly: 3,
-      priceYearly: 30,
-      isCurrent: true,
-      backgroundColor: "transparent",
-      features: [
-        { id: "f1", title: "card customization" },
-        { id: "f2", title: "premium icon" },
-        { id: "f3", title: "better search algorithm" },
-        { id: "f4", title: "AI assistant, AI abilities" },
-      ],
-    },
-    {
-      id: "bac",
-      title: "BAC (Business Automatic Card)",
-      priceMonthly: 7,
-      priceYearly: 77,
-      backgroundColor: "#FFFAE8",
-      features: [
-        { id: "f1", title: "full BAC abilities" },
-        { id: "f2", title: "AI business tools" },
-        { id: "f3", title: "MAXimum customization" },
-      ],
-    },
-    {
-      id: "vipac",
-      title: "VIPAC (VIP Automatic Card)",
-      priceMonthly: 50,
-      backgroundColor: "#FFEEB8",
-      showCrown: true,
-      features: [
-        { id: "f1", title: "VIP tools" },
-        { id: "f2", title: "MAXimum customization" },
-        { id: "f3", title: "PREMIUM included" },
-        { id: "f4", title: "AI assistant and tools" },
-      ],
-    },
-  ]
+  const { plans, loading } = useSelector((state: RootState) => state.subscriptions)
+  const activeCodes = useSelector(selectActivePlanCodes)
+  const hasVip = useSelector(selectHasVip)
+
+  const [subscribingPlanId, setSubscribingPlanId] = useState<string | null>(null)
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Тягнемо плани і поточні підписки, якщо ще не завантажені.
+  useEffect(() => {
+    if (!plans.length) dispatch(fetchActivePlans())
+    dispatch(fetchAllSubscriptions())
+  }, [dispatch])
+
+  /**
+   * Сортуємо плани за `sortOrder` з PLAN_DISPLAY (FREE → PREMIUM → BUSINESS → VIP).
+   * Невідомі коди — у кінець.
+   */
+  const sortedPlans = useMemo(() => {
+    return [...plans].sort((a, b) => {
+      const orderA = PLAN_DISPLAY[a.code]?.sortOrder ?? 999
+      const orderB = PLAN_DISPLAY[b.code]?.sortOrder ?? 999
+      return orderA - orderB
+    })
+  }, [plans])
+
+  /**
+   * Чи доступна "Subscribe" дія для цього плану.
+   * Повертає або null (можна), або текст з причиною (заблоковано).
+   */
+  const getDisabledReason = (planCode: PlanCode): string | null => {
+    if (planCode === PlanCode.FREE) {
+      return "Free plan is enabled by default"
+    }
+    if (activeCodes.includes(planCode)) {
+      return "Already active"
+    }
+    if (planCode === PlanCode.PREMIUM && hasVip) {
+      return "VIP already includes all premium features"
+    }
+    return null
+  }
+
+  // Polling: коли юзер повертається в апку після оплати, перевіряємо
+  // чи бек уже отримав webhook від KiraPay і активував підписку.
+  const stopPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+    setPendingOrderId(null)
+  }
+
+  const startPollingForActivation = (expectedCode: PlanCode) => {
+    let attempts = 0
+    const MAX_ATTEMPTS = 30 // ~30 секунд при 1с інтервалу
+    pollingRef.current = setInterval(async () => {
+      attempts++
+      try {
+        await dispatch(fetchAllSubscriptions()).unwrap()
+        // activeCodes оновиться через Redux; перевіряємо в наступному рендері
+      } catch {
+        // ignore — спробуємо ще раз
+      }
+      if (attempts >= MAX_ATTEMPTS) {
+        stopPolling()
+      }
+    }, 1000)
+  }
+
+  // Як тільки в activeCodes з'являється план який ми чекали → success і стоп.
+  useEffect(() => {
+    if (pendingOrderId && pollingRef.current) {
+      const [, planCode] = pendingOrderId.split("|")
+      if (planCode && activeCodes.includes(planCode as PlanCode)) {
+        stopPolling()
+        Alert.alert("Success", "Subscription activated!")
+      }
+    }
+  }, [activeCodes, pendingOrderId])
+
+  // При поверненні в апку зразу робимо рефреш підписок (на випадок якщо
+  // полінг прокинувся але webhook прийшов поки апка була в фоні).
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active" && pendingOrderId) {
+        dispatch(fetchAllSubscriptions())
+      }
+    })
+    return () => sub.remove()
+  }, [pendingOrderId, dispatch])
+
+  // Cleanup при анмаунті — щоб таймер не "висів"
+  useEffect(() => () => stopPolling(), [])
+
+  const handleSubscribe = async (plan: SubscriptionPlan) => {
+    const code = plan.code as PlanCode
+
+    if (code === PlanCode.FREE) {
+      Alert.alert("Free plan", "Free plan is enabled by default")
+      return
+    }
+
+    setSubscribingPlanId(plan.id)
+    try {
+      // 1. Бек створює KiraPay checkout-сесію
+      const { paymentUrl, orderId } = await paymentsService.createCheckoutSession({
+        planCode: code,
+        billingCycle: "monthly",
+      })
+
+      // 2. Відкриваємо payment-link в Phantom (або system browser як fallback)
+      const opened = await openInWallet(paymentUrl)
+      if (!opened) {
+        Alert.alert("Error", "Couldn't open payment page. Please try again.")
+        return
+      }
+
+      // 3. Запускаємо polling — коли юзер повернеться в апку, ми очікуємо
+      //    що бек прийняв webhook від KiraPay і активував підписку.
+      setPendingOrderId(orderId)
+      startPollingForActivation(code)
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        "Failed to start checkout. Please try again."
+      Alert.alert("Error", msg)
+    } finally {
+      setSubscribingPlanId(null)
+    }
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -97,7 +253,7 @@ const SubscriptionScreen = () => {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: useTabBarHeight() }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}
         showsVerticalScrollIndicator={false}
       >
         <Text
@@ -125,127 +281,188 @@ const SubscriptionScreen = () => {
           Choose a subscription plan to unlock all the functionality of the application
         </Text>
 
-        <View style={styles.plansContainer}>
-          {plans.map((plan) => (
-            <View
-              key={plan.id}
-              style={[
-                styles.planCard,
-                {
-                  backgroundColor: plan.backgroundColor || colors.card,
-                },
-                plan.id === 'premium' && { borderWidth: 1, borderColor: colors.textPrimary }
-              ]}
-            >
-              {plan.isCurrent && (
-                <View style={styles.currentBadge}>
-                  <Text style={styles.currentBadgeText}>Current</Text>
-                </View>
-              )}
+        {loading && !plans.length ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              Loading plans...
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.plansContainer}>
+            {sortedPlans.map((plan) => {
+              const code = plan.code as PlanCode
+              const meta = PLAN_DISPLAY[code]
+              const isCurrent = activeCodes.includes(code)
+              const disabledReason = getDisabledReason(code)
+              const isSubscribing = subscribingPlanId === plan.id
+              const featureLines = formatPlanFeatures(code, plan.features)
+              const description = plan.description ?? meta?.prettyName
 
-              <View style={styles.planContent}>
-                <View style={styles.planLeft}>
-                  <View style={[{ flexDirection: 'row', alignItems: 'center',  marginBottom: 12, gap: 6 }]}>
-                    {plan.showCrown && <CrownIcon />}
-                    <Text
-                      style={[
-                        styles.planTitle,
-                        {
-                          fontFamily: typography.fontFamily.bold,
-                          fontSize: typography.fontSize.lg,
-                          fontWeight: 'bold',
-                          color: colors.textPrimary
-                        },
-                      ]}
-                    >
-                      {plan.title}
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={[
-                      styles.includesText,
-                      {
-                        fontFamily: typography.fontFamily.regular,
-                        fontSize: typography.fontSize.sm,
-                        color: colors.textPrimary
-                      },
-                    ]}
-                  >
-                    Includes
-                  </Text>
-
-                  <View style={styles.featuresContainer}>
-                    {plan.features.map((feature) => (
-                      <View key={feature.id} style={styles.featureItem}>
-                        <View style={styles.featureBullet} />
+              return (
+                <View
+                  key={plan.id}
+                  style={[
+                    styles.planCard,
+                    {
+                      backgroundColor: meta?.backgroundColor ?? colors.card,
+                    },
+                    // Free-картка має облямівку, як у початковому дизайні.
+                    code === PlanCode.FREE && {
+                      borderWidth: 1,
+                      borderColor: colors.textPrimary,
+                    },
+                  ]}
+                >
+                  <View style={styles.planContent}>
+                    <View style={styles.planLeft}>
+                      <View style={styles.titleRow}>
+                        {meta?.showCrown && <CrownIcon />}
                         <Text
                           style={[
-                            styles.featureText,
+                            styles.planTitle,
                             {
-                              fontFamily: typography.fontFamily.regular,
-                              fontSize: typography.fontSize.sm,
-                              color: colors.textPrimary
+                              fontFamily: typography.fontFamily.bold,
+                              fontSize: typography.fontSize.lg,
+                              fontWeight: "bold",
+                              color: colors.textPrimary,
                             },
                           ]}
                         >
-                          {feature.title}
+                          {meta?.prettyName ?? plan.displayName ?? plan.name}
                         </Text>
+                        {isCurrent && (
+                          <View style={styles.currentBadge}>
+                            <Text style={styles.currentBadgeText}>Current</Text>
+                          </View>
+                        )}
                       </View>
-                    ))}
-                  </View>
-                </View>
 
-                <View style={styles.planRight}>
-                  <View style={styles.priceRow}>
-                    <Text style={[styles.priceAmount, { fontFamily: typography.fontFamily.bold, color: '#71706A' }]}>
-                      ${plan.priceMonthly}
-                    </Text>
-                    <Text style={[styles.pricePeriod, { fontFamily: typography.fontFamily.regular, color: '#71706A' }]}>Monthly</Text>
-                  </View>
-                  {plan.priceYearly && (
-                    <View style={styles.priceRow}>
-                      <Text style={[styles.priceAmount, { fontFamily: typography.fontFamily.bold, color: '#56554E' }]}>
-                        ${plan.priceYearly}
+                      {description && (
+                        <Text
+                          style={[
+                            styles.description,
+                            {
+                              fontFamily: typography.fontFamily.regular,
+                              fontSize: typography.fontSize.sm,
+                              color: colors.textPrimary,
+                            },
+                          ]}
+                        >
+                          {description}
+                        </Text>
+                      )}
+
+                      <Text
+                        style={[
+                          styles.includesText,
+                          {
+                            fontFamily: typography.fontFamily.regular,
+                            fontSize: typography.fontSize.sm,
+                            color: colors.textPrimary,
+                          },
+                        ]}
+                      >
+                        Includes
                       </Text>
-                      <Text style={[styles.pricePeriod, { fontFamily: typography.fontFamily.regular, color: '#56554E' }]}>Yearly</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
 
-        <Text
-          style={[
-            styles.disclaimer,
-            {
-              color: colors.textSecondary,
-              fontFamily: typography.fontFamily.regular,
-              fontSize: typography.fontSize.sm,
-            },
-          ]}
-        >
-          Vertical editor underline opacity follower image move create. Union vertical scale ipsum bullet library star list line. Italic stroke image link content ellipse select layer distribute outline. Subtract style polygon thumbnail asset. Content team arrow thumbnail undo. Bullet content move italic list device. Clip rectangle union subtract fill fill union pencil edit scrolling. Bold connection scrolling layout opacity text selection.
-          Figjam library shadow scrolling team font plugin move flatten. Pencil draft content share list polygon pen plugin.
-          Export rectangle slice follower vector content mask arrange.
-        </Text>
+                      <View style={styles.featuresContainer}>
+                        {featureLines.map((line, idx) => (
+                          <View key={idx} style={styles.featureItem}>
+                            <View style={styles.featureBullet} />
+                            <Text
+                              style={[
+                                styles.featureText,
+                                {
+                                  fontFamily: typography.fontFamily.regular,
+                                  fontSize: typography.fontSize.sm,
+                                  color: colors.textPrimary,
+                                },
+                              ]}
+                            >
+                              {line}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.planRight}>
+                      {plan.price > 0 ? (
+                        <View style={styles.priceRow}>
+                          <Text
+                            style={[
+                              styles.priceAmount,
+                              { fontFamily: typography.fontFamily.bold, color: "#71706A" },
+                            ]}
+                          >
+                            ${plan.price}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.pricePeriod,
+                              {
+                                fontFamily: typography.fontFamily.regular,
+                                color: "#71706A",
+                              },
+                            ]}
+                          >
+                            {plan.durationMonths === 0
+                              ? "Forever"
+                              : plan.durationMonths === 12
+                              ? "Yearly"
+                              : "Monthly"}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.priceRow}>
+                          <Text
+                            style={[
+                              styles.priceAmount,
+                              { fontFamily: typography.fontFamily.bold, color: "#71706A" },
+                            ]}
+                          >
+                            Free
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Subscribe / disabled-з-причиною */}
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      onPress={() => handleSubscribe(plan)}
+                      disabled={!!disabledReason || isSubscribing}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.subscribeButton,
+                        (!!disabledReason || isSubscribing) && styles.subscribeButtonDisabled,
+                      ]}
+                    >
+                      {isSubscribing ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.subscribeButtonText}>
+                          {isCurrent ? "Active" : "Subscribe"}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    {disabledReason && !isCurrent && (
+                      <Text style={[styles.disabledReason, { color: colors.textSecondary }]}>
+                        {disabledReason}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              )
+            })}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
 }
-
-const CrownIcon = () => {
-  return (
-    <Svg width={20} height={14} viewBox="0 0 20 14" fill="none">
-      <Path
-        d="M9.74951 0C9.87899 7.38348e-06 10.0069 0.0338689 10.1196 0.0976562C10.2322 0.161438 10.3265 0.253322 10.3931 0.364258L13.605 5.7002L18.3423 2.62109C18.4633 2.54265 18.6043 2.50032 18.7485 2.5C18.8929 2.49973 19.0343 2.54197 19.1558 2.62012C19.277 2.69817 19.3735 2.8091 19.4331 2.94043C19.4927 3.07197 19.513 3.2185 19.4917 3.36133L17.9917 13.3613C17.9651 13.5389 17.8758 13.7011 17.7397 13.8184C17.6036 13.9356 17.4292 14.0001 17.2495 14H2.24951C2.06994 14 1.89633 13.9355 1.76025 13.8184C1.62416 13.7011 1.53493 13.539 1.5083 13.3613L0.00830078 3.36133C-0.0130408 3.2185 0.00730585 3.07197 0.0668945 2.94043C0.126501 2.8091 0.222952 2.69816 0.344238 2.62012C0.465668 2.54199 0.607073 2.49973 0.751465 2.5C0.895678 2.50034 1.03671 2.54264 1.15771 2.62109L5.89502 5.7002L9.10693 0.363281C9.17368 0.252473 9.26773 0.160286 9.38037 0.0966797C9.49291 0.0331442 9.62028 -2.06176e-05 9.74951 0Z"
-        fill="#FFC300"
-      />
-    </Svg>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -278,35 +495,41 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 20,
   },
+  loadingState: {
+    paddingVertical: 60,
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 13,
+  },
   plansContainer: {
     marginBottom: 24,
   },
   planCard: {
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 28,
     position: "relative",
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginBottom: 8,
+    gap: 8,
+  },
   currentBadge: {
-    position: "absolute",
-    top: -12,
-    right: 24,
     backgroundColor: "#71706A",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    zIndex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 14,
+    alignSelf: "center",
   },
   currentBadgeText: {
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
-  },
-  crownIcon: {
-    position: "absolute",
-    top: 16,
-    left: 20,
-    fontSize: 28,
   },
   planContent: {
     flexDirection: "row",
@@ -318,6 +541,11 @@ const styles = StyleSheet.create({
   },
   planTitle: {
     color: "#333333",
+  },
+  description: {
+    marginBottom: 12,
+    color: "#666666",
+    lineHeight: 18,
   },
   includesText: {
     marginBottom: 8,
@@ -345,9 +573,9 @@ const styles = StyleSheet.create({
   planRight: {
     alignItems: "flex-start",
     justifyContent: "flex-start",
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingTop: 32,
-    gap: 12
+    gap: 12,
   },
   priceRow: {
     alignItems: "flex-end",
@@ -361,10 +589,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666666",
   },
-  disclaimer: {
-    textAlign: "center",
-    marginBottom: 24,
-    paddingHorizontal: 20,
+  actionRow: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  subscribeButton: {
+    backgroundColor: "#27261F",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 10,
+    minWidth: 120,
+    alignItems: "center",
+  },
+  subscribeButtonDisabled: {
+    backgroundColor: "#B5B4AE",
+  },
+  subscribeButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  disabledReason: {
+    fontSize: 12,
+    flexShrink: 1,
   },
 })
 

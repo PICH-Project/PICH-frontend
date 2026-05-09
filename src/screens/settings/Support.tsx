@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 interface SupportOption {
   id: string
@@ -15,6 +16,7 @@ interface SupportOption {
 const SupportScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
+  const insets = useSafeAreaInsets()
 
   const supportOptions: SupportOption[] = [
     {
@@ -39,7 +41,7 @@ const SupportScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
         </TouchableOpacity>

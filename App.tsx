@@ -36,7 +36,7 @@ export default function App() {
                     setIsNavReady(true);
                   }}
                 >
-                  <StatusBar style="auto" />
+                  <StatusBar style="dark" />
                   <AppNavigator isNavReady={isNavReady} navigationRef={navigationRef} />
                 </NavigationContainer>
               </SafeAreaProvider>

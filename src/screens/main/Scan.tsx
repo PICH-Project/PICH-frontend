@@ -8,8 +8,9 @@ import { useNavigation, useIsFocused } from "@react-navigation/native"
 import { useDispatch } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
-import { createConnection } from "../../store/slices/connectionsSlice"
+import { createConnection, fetchConnectedCards } from "../../store/slices/connectionsSlice"
 import type { AppDispatch } from "../../store"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const { width, height } = Dimensions.get("window")
 const SCAN_AREA_SIZE = width * 0.5
@@ -22,6 +23,7 @@ const ScanScreen = () => {
   const tabBarHeight = useTabBarHeight()
   const isFocused = useIsFocused()
   const dispatch = useDispatch<AppDispatch>()
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     const getBarCodeScannerPermissions = async () => {
@@ -32,63 +34,83 @@ const ScanScreen = () => {
     getBarCodeScannerPermissions()
   }, [])
 
-  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+  /**
+   * Дістати cardId зі сканованого URL.
+   * Підтримує три формати:
+   *   pich://connect/<uuid>      ← QR з нашого бек-генератора
+   *   pich://card/<uuid>         ← legacy / share-link
+   *   https://pich.app/card/<uuid>
+   *   ...або просто чистий UUID на крайній випадок.
+   * Повертає `null` якщо нічого не розпізнали.
+   */
+  const extractCardIdFromQR = (raw: string): string | null => {
+    if (!raw) return null
+    const trimmed = raw.trim()
+    // Швидка перевірка — чистий UUID без будь-якого URL?
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(trimmed)) return trimmed
+    // Інакше — беремо останній сегмент після '/'.
+    const lastSegment = trimmed.split('/').pop()?.split('?')[0]
+    if (lastSegment && uuidRegex.test(lastSegment)) return lastSegment
+    return null
+  }
+
+  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
     setScanned(true)
 
-    try {
-      // Try to parse the QR code data
-      const qrData = JSON.parse(data)
+    const cardId = extractCardIdFromQR(data)
+    if (!cardId) {
+      Alert.alert(
+        "Invalid QR Code",
+        "This QR doesn't look like a PICH card. Try scanning again.",
+        [{ text: "OK", onPress: () => setScanned(false) }],
+      )
+      return
+    }
 
-      console.log(`qrData: ${qrData}`)
-
-      const cardId = qrData.split('/').pop();
-
-      console.log(`cardId: ${cardId}`)
-
-      // Check if the QR code contains a user ID
-      if (qrData && cardId) {
-        Alert.alert(
-          "Connection Request",
-          "Would you like to connect with this user?",
-          [
-            {
-              text: "Cancel",
-              style: "cancel",
-              onPress: () => setScanned(false),
-            },
-            {
-              text: "Connect",
-              onPress: async () => {
-                try {
-                  // Create a connection with the scanned user
-                  await dispatch(createConnection({ scannedCardId: cardId })).unwrap()
-                  Alert.alert("Success", "Connection request sent successfully!")
-                  navigation.navigate("Stack" as never)
-                } catch (error: any) {
-                  Alert.alert("Error", error.message || "Failed to create connection. Please try again.")
-                  setScanned(false)
-                }
-              },
-            },
-          ],
-          { cancelable: false },
-        )
-      } else {
-        Alert.alert("Invalid QR Code", "This QR code doesn't contain valid connection information.", [
-          {
-            text: "OK",
-            onPress: () => setScanned(false),
-          },
-        ])
-      }
-    } catch (error) {
-      Alert.alert("Invalid QR Code", "This QR code doesn't contain valid connection information.", [
+    Alert.alert(
+      "Add this card?",
+      "Add this card to your contacts?",
+      [
         {
-          text: "OK",
+          text: "Cancel",
+          style: "cancel",
           onPress: () => setScanned(false),
         },
-      ])
-    }
+        {
+          text: "Add",
+          onPress: async () => {
+            try {
+              await dispatch(createConnection({ scannedCardId: cardId })).unwrap()
+              // Підвантажимо нові connectedCards щоб у Stack вкладці "Connected"
+              // одразу з'явилась нова картка.
+              dispatch(fetchConnectedCards())
+              Alert.alert(
+                "Card added",
+                "The card has been added to your contacts.",
+                [
+                  {
+                    text: "View",
+                    onPress: () => navigation.navigate("Stack" as never),
+                  },
+                  { text: "OK", style: "cancel" },
+                ],
+              )
+            } catch (err: any) {
+              // Бек повертає різні помилки: 409 (вже існує / своя ж картка), 404 (не знайдено).
+              const msg =
+                typeof err === "string"
+                  ? err
+                  : err?.response?.data?.message ?? err?.message ?? "Failed to add card"
+              Alert.alert("Couldn't add card", msg, [
+                { text: "OK", onPress: () => setScanned(false) },
+              ])
+            }
+          },
+        },
+      ],
+      { cancelable: false },
+    )
   }
 
   if (hasPermission === null) {
@@ -111,10 +133,10 @@ const ScanScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#F1F0EA" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.headerContainer}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>

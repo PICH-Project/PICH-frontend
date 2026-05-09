@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, FC, CSSProperties } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import type { RootState, AppDispatch } from "../../store"
 import { fetchCards, deleteCard } from "../../store/slices/cardsSlice"
 import type { Card } from "../../services/cardService"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 interface CardGroup {
   title: string
@@ -176,6 +177,9 @@ const StackScreen = () => {
   const { colors } = useTheme()
   const dispatch = useDispatch<AppDispatch>()
   const { cards, loading } = useSelector((state: RootState) => state.cards)
+  const connectedCards = useSelector((state: RootState) => state.connections.connectedCards)
+  /** Toggle: 'mine' — мої власні картки, 'connected' — чужі додані через scan. */
+  const [mode, setMode] = useState<"mine" | "connected">("mine")
   const [searchQuery, setSearchQuery] = useState("")
   const [filteredCards, setFilteredCards] = useState<CardGroup[]>([])
   const [isFolderEnabled, setIsFolderEnabled] = useState(false)
@@ -187,6 +191,10 @@ const StackScreen = () => {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
   const tabBarHeight = useTabBarHeight()
+  const insets = useSafeAreaInsets()
+
+  /** Картки, які зараз показуємо: свої або чужі залежно від `mode`. */
+  const sourceCards = mode === "mine" ? cards : connectedCards
 
   useEffect(() => {
     dispatch(fetchCards())
@@ -194,18 +202,18 @@ const StackScreen = () => {
 
   // For demo purposes, let's mark some cards as starred
   useEffect(() => {
-    if (cards.length > 0) {
+    if (sourceCards.length > 0) {
       // Mark cards with isPrime as starred for demo
-      const starred = cards.filter((card) => card.isPrime).map((card) => card.id)
+      const starred = sourceCards.filter((card) => card.isPrime).map((card) => card.id)
       setStarredCards(starred)
     }
-  }, [cards])
+  }, [sourceCards])
 
   useEffect(() => {
     // Filter and group cards based on search query and button states
     const query = searchQuery.toLowerCase()
     const filtered: CardGroup[] = []
-    let filteredCards = [...cards]
+    let filteredCards = [...sourceCards]
 
     // Apply search filter if query exists
     if (query) {
@@ -243,12 +251,16 @@ const StackScreen = () => {
     } else {
       // Single section with all filtered cards
       if (filteredCards.length > 0) {
-        filtered.push({ title: isStarEnabled ? "SELECTED" : "ALL CARDS", data: filteredCards })
+        const baseTitle = mode === "mine" ? "ALL CARDS" : "CONNECTED CARDS"
+        filtered.push({
+          title: isStarEnabled ? "SELECTED" : baseTitle,
+          data: filteredCards,
+        })
       }
     }
 
     setFilteredCards(filtered)
-  }, [cards, searchQuery, isFolderEnabled, isStarEnabled, starredCards])
+  }, [sourceCards, searchQuery, isFolderEnabled, isStarEnabled, starredCards])
 
   const getCardTypeColor = (type: Card["type"]) => {
       switch (type) {
@@ -412,14 +424,50 @@ const StackScreen = () => {
   )
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#F1F0EA" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.headerContainer}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 15 }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Stack</Text>
           <TouchableOpacity style={styles.menuButton} onPress={navigateToActions}>
             <Ionicons name="menu" size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Toggle: My Cards / Connected (segmented chip) */}
+        <View style={styles.modeToggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.modeToggleChip,
+              mode === "mine" && styles.modeToggleChipActive,
+            ]}
+            onPress={() => setMode("mine")}
+          >
+            <Text
+              style={[
+                styles.modeToggleText,
+                mode === "mine" && styles.modeToggleTextActive,
+              ]}
+            >
+              My Cards
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.modeToggleChip,
+              mode === "connected" && styles.modeToggleChipActive,
+            ]}
+            onPress={() => setMode("connected")}
+          >
+            <Text
+              style={[
+                styles.modeToggleText,
+                mode === "connected" && styles.modeToggleTextActive,
+              ]}
+            >
+              Connected{connectedCards.length > 0 ? ` (${connectedCards.length})` : ""}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -514,8 +562,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 12,
+    paddingBottom: 12,
   },
   title: {
     fontSize: 25,
@@ -527,6 +574,32 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
+  },
+  modeToggleContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  modeToggleChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#DEDDD1",
+    backgroundColor: "transparent",
+  },
+  modeToggleChipActive: {
+    backgroundColor: "#27261F",
+    borderColor: "#27261F",
+  },
+  modeToggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#56554E",
+  },
+  modeToggleTextActive: {
+    color: "#FFFFFF",
   },
   searchContainer: {
     flexDirection: "row",

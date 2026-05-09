@@ -20,6 +20,7 @@ import { fetchCards } from "../../store/slices/cardsSlice"
 import { toggleMainCard } from "../../store/slices/cardsSlice"
 import type { Card } from "../../services/cardService"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const SetMainCardScreen = () => {
   const navigation = useNavigation()
@@ -27,6 +28,7 @@ const SetMainCardScreen = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { cards, loading } = useSelector((state: RootState) => state.cards)
   const tabBarHeight = useTabBarHeight()
+  const insets = useSafeAreaInsets()
   const [settingMain, setSettingMain] = useState<string | null>(null)
 
   useEffect(() => {
@@ -39,10 +41,8 @@ const SetMainCardScreen = () => {
         return "#4CD964"
       case "PAC":
         return "#FFCC4D"
-      case "VAC":
-        return "#FF6347"
-      case "CAC":
-        return "#5AC8FA"
+      case "VIPAC":
+        return "#FF6459"
       default:
         return colors.secondary
     }
@@ -124,7 +124,7 @@ const SetMainCardScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -152,7 +152,7 @@ const SetMainCardScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>

@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBackButton = true, showMenuB
         styles.container,
         {
           backgroundColor: colors.background,
-          paddingTop: insets.top,
+          paddingTop: insets.top + 15,
         },
       ]}
     >

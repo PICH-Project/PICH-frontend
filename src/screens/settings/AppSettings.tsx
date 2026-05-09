@@ -12,11 +12,13 @@ import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
 import Toggle from "../../components/common/Toggle"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const AppSettingsScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
   const dispatch = useDispatch<AppDispatch>()
+  const insets = useSafeAreaInsets()
 
   // Redux state
   const { profile, loading } = useSelector((state: RootState) => state.user)
@@ -97,7 +99,7 @@ const AppSettingsScreen = () => {
       onRequestClose={() => setIsEditModalVisible(false)}
     >
       <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-        <View style={styles.modalHeader}>
+        <View style={[styles.modalHeader, { paddingTop: insets.top + 15 }]}>
           <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
             <Text style={[styles.modalCancelButton, { color: colors.textSecondary }]}>Cancel</Text>
           </TouchableOpacity>
@@ -174,7 +176,7 @@ const AppSettingsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>

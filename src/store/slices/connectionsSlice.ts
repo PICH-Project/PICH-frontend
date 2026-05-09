@@ -1,9 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import connectionService, { type Connection, type CreateConnectionPayload } from "../../services/connectionService"
 import type { UserProfile } from "../../services/authService"
+import type { Card } from "../../services/cardService"
 
 interface ConnectionsState {
   connections: Connection[]
+  /** Чужі картки до яких юзер під'єднаний (з `/connections/cards`). */
+  connectedCards: Card[]
   friends: UserProfile[]
   loading: boolean
   error: string | null
@@ -12,11 +15,28 @@ interface ConnectionsState {
 
 const initialState: ConnectionsState = {
   connections: [],
+  connectedCards: [],
   friends: [],
   loading: false,
   error: null,
   selectedConnectionId: null,
 }
+
+/**
+ * Тягне список Card[] юзерів з якими є connection
+ * (тобто чужі картки, що додав через scan).
+ */
+export const fetchConnectedCards = createAsyncThunk(
+  "connections/fetchConnectedCards",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await connectionService.getConnectedCards()
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to fetch connected cards."
+      return rejectWithValue(message)
+    }
+  },
+)
 
 export const fetchConnections = createAsyncThunk("connections/fetchConnections", async (_, { rejectWithValue }) => {
   try {
@@ -154,13 +174,23 @@ const connectionsSlice = createSlice({
         state.error = action.payload as string
       })
 
-      // Create connection
+      // Fetch connected cards (чужі картки, до яких юзер під'єднаний)
+      .addCase(fetchConnectedCards.fulfilled, (state, action) => {
+        state.connectedCards = action.payload
+      })
+      .addCase(fetchConnectedCards.rejected, (state, action) => {
+        state.error = action.payload as string
+      })
+
+      // Create connection — після успіху одразу оновлюємо список чужих карток.
       .addCase(createConnection.pending, (state) => {
         state.loading = true
         state.error = null
       })
       .addCase(createConnection.fulfilled, (state, action) => {
         state.connections.push(action.payload)
+        // Картка нового знайомого з'явиться в connectedCards коли selector
+        // повторно дернемо fetchConnectedCards (з UI / Scan після успіху).
         state.loading = false
       })
       .addCase(createConnection.rejected, (state, action) => {

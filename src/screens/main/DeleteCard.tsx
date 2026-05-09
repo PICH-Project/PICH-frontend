@@ -19,6 +19,7 @@ import type { RootState, AppDispatch } from "../../store"
 import { fetchCards, deleteCard } from "../../store/slices/cardsSlice"
 import type { Card } from "../../services/cardService"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const DeleteCardScreen = () => {
   const navigation = useNavigation()
@@ -26,6 +27,7 @@ const DeleteCardScreen = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { cards, loading } = useSelector((state: RootState) => state.cards)
   const tabBarHeight = useTabBarHeight()
+  const insets = useSafeAreaInsets()
   const [deletingCard, setDeletingCard] = useState<string | null>(null)
 
   useEffect(() => {
@@ -38,10 +40,8 @@ const DeleteCardScreen = () => {
         return "#4CD964"
       case "PAC":
         return "#FFCC4D"
-      case "VAC":
-        return "#FF6347"
-      case "CAC":
-        return "#5AC8FA"
+      case "VIPAC":
+        return "#FF6459"
       default:
         return colors.secondary
     }
@@ -120,7 +120,7 @@ const DeleteCardScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -148,7 +148,7 @@ const DeleteCardScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>

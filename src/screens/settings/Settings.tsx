@@ -21,6 +21,8 @@ import { useDispatch } from "react-redux"
 import { fetchUserProfile } from "@/store/slices/authSlice"
 import type { AppDispatch } from "@/store"
 import Svg, { Path } from "react-native-svg"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { YellowCrownIcon } from "../../components/icons"
 
 const AvatarCircle = ({ color = '#71706A'}: { color?: string }) => {
   return (
@@ -59,23 +61,12 @@ const GearIcon = ({ color = '#71706A' }: { color?: string }) => {
   );
 }
 
-const CrownIcon = ({ color = '#71706A' }: { color?: string }) => {
-  return (
-    <Svg
-      width={20}
-      height={14}
-      viewBox="0 0 20 14"
-      fill="none"
-      accessible
-      accessibilityRole="image"
-    >
-      <Path
-        d="M9.75 0C9.87931 7.38472e-05 10.0066 0.0329922 10.1191 0.0966797C10.2317 0.160398 10.326 0.252426 10.3926 0.363281L13.6045 5.7002L18.3418 2.62109C18.4628 2.54256 18.6038 2.50035 18.748 2.5C18.8923 2.49973 19.0339 2.54113 19.1553 2.61914C19.2767 2.69725 19.373 2.80895 19.4326 2.94043C19.4922 3.07187 19.5125 3.21763 19.4912 3.36035L17.9912 13.3604C17.9646 13.5381 17.8754 13.7011 17.7393 13.8184C17.6032 13.9355 17.4295 14 17.25 14H2.25C2.0703 14.0001 1.89594 13.9356 1.75977 13.8184C1.62358 13.7011 1.53441 13.5381 1.50781 13.3604L0.0078125 3.36035C-0.0134412 3.21764 0.00686763 3.07186 0.0664062 2.94043C0.125998 2.80892 0.222334 2.69727 0.34375 2.61914C0.46515 2.54107 0.606639 2.49973 0.750977 2.5C0.89528 2.50031 1.03616 2.54257 1.15723 2.62109L5.89453 5.7002L9.10645 0.362305C9.17313 0.251708 9.26746 0.160231 9.37988 0.0966797C9.49255 0.0330723 9.62061 -9.63385e-05 9.75 0Z"
-        fill={color}
-      />
-    </Svg>
-  );
-}
+// CrownIcon у Settings — той самий 20x14 shape, що й YellowCrownIcon, але
+// за замовчуванням сірий (а не жовтий). Тонкий wrapper, щоб усі call-sites
+// нижче лишилися без змін.
+const CrownIcon = ({ color = '#71706A' }: { color?: string }) => (
+  <YellowCrownIcon color={color} />
+)
 
 const ContactSupportIcon = ({
   color = '#71706A',
@@ -113,6 +104,7 @@ const SettingsScreen = () => {
   const dispatch = useDispatch<AppDispatch>()
   const [loading, setLoading] = useState(false)
   const tabBarHeight = useTabBarHeight()
+  const insets = useSafeAreaInsets()
 
   // Fetch user profile if not already loaded
   useEffect(() => {
@@ -191,7 +183,7 @@ const SettingsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>

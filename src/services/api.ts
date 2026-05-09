@@ -4,9 +4,11 @@ import { store } from "../store"
 import { logout } from "../store/slices/authSlice"
 
 // Update the base URL to point to the PICH backend API
-// http://157.180.71.47:3003/api, http://10.0.2.2:3003/api
+// http://157.180.71.47:3003/api - prod
+// http://10.0.2.2:3003/api - Android emulator -> host
+// http://192.168.0.103:3003/api - local LAN (Seeker / phone on same Wi-Fi)
 const api = axios.create({
-  baseURL: "http://157.180.71.47:3003/api", // Updated to match the API documentation base URL
+  baseURL: "http://192.168.0.103:3003/api",
   headers: {
     "Content-Type": "application/json",
   },

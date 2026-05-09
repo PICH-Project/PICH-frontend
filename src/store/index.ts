@@ -7,6 +7,7 @@ import cardsReducer from "./slices/cardsSlice"
 import connectionsReducer from "./slices/connectionsSlice"
 import settingsReducer from "./slices/settingsSlice"
 import userReducer from "./slices/userSlice"
+import subscriptionsReducer from "./slices/subscriptionsSlice"
 
 const persistConfig = {
   key: "root",
@@ -20,6 +21,7 @@ const rootReducer = combineReducers({
   connections: connectionsReducer,
   settings: settingsReducer,
   user: userReducer,
+  subscriptions: subscriptionsReducer,
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

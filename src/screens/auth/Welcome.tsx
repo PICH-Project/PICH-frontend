@@ -99,7 +99,7 @@ const WelcomeScreen = () => {
 
         <View style={styles.socialButtonsContainer}>
           <SocialButton provider="google" onPress={() => login({ provider: 'google' })} />
-          <SocialButton provider="facebook" onPress={handleFacebookLogin} />
+          {/* <SocialButton provider="facebook" onPress={handleFacebookLogin} /> */}
         </View>
 
         <View style={styles.buttonsContainer}>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 10,
   },
   image: {
     width: 107,

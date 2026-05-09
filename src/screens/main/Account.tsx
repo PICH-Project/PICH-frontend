@@ -22,27 +22,25 @@ import type { AppDispatch, RootState } from "../../store"
 import { fetchUserProfile } from "../../store/slices/userSlice"
 import { fetchCards } from "../../store/slices/cardsSlice"
 import type { NavigationProp } from "@react-navigation/native"
-
-// Card type and category enums to match backend
-enum CardType {
-  BAC = "BAC", // Business Automatic Card
-  PAC = "PAC", // Personal Automatic Card
-  VAC = "VAC", // Virtual Automatic Card
-  CAC = "CAC", // Custom Automatic Card
-}
-
-enum CardCategory {
-  FAMILY = "FAMILY",
-  FRIENDS = "FRIENDS",
-  WORK = "WORK",
-  OTHER = "OTHER",
-}
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import {
+  CardType,
+  CardCategory,
+  CARD_TYPE_DISPLAY,
+  CARD_CATEGORY_DISPLAY,
+} from "../../constants/cards"
+import { PlanCode, PLAN_DISPLAY } from "../../constants/subscriptions"
+import {
+  selectPrimarySubscription,
+  selectPremiumAddon,
+} from "../../store/slices/subscriptionsSlice"
 
 const AccountScreen = () => {
   const navigation = useNavigation<NavigationProp<any>>()
   const { colors, typography } = useTheme()
   const dispatch = useDispatch<AppDispatch>()
   const tabBarHeight = useTabBarHeight()
+  const insets = useSafeAreaInsets()
 
   // Redux state
   const { profile: user, loading: userLoading, error: userError } = useSelector((state: RootState) => state.user)
@@ -76,12 +74,19 @@ const AccountScreen = () => {
     navigation.navigate("Settings", { screen: "AccountSettings" })
   }
 
+  /**
+   * Account живе у власному табі. Stack-екрани (StackMain / CardConstructor /
+   * CreateCard) — у Stack-табі. Тому треба спочатку переключити таб на "Stack",
+   * а потім (опційно) — на конкретний nested screen.
+   */
   const handleViewCards = () => {
-    navigation.navigate("StackMain")
+    navigation.navigate("Stack", { screen: "StackMain" })
   }
 
   const handleCreateCard = () => {
-    navigation.navigate("CreateCard")
+    // Кидаємо на CardConstructor, де юзер обирає тип картки (PAC/BAC/VIPAC).
+    // Прямо на CreateCard йти не можна — той вимагає param `cardType`.
+    navigation.navigate("Stack", { screen: "CardConstructor" })
   }
 
   const handleUpgradeSubscription = () => {
@@ -93,74 +98,41 @@ const AccountScreen = () => {
   const cardCount = cards.length
   const connectionCount = 0 // This would come from connections data when implemented
 
-  // Get subscription plan display name
-  const getSubscriptionDisplayName = (plan: string) => {
-    switch (plan) {
-      case "basic":
-        return "Basic"
-      case "medium":
-        return "Medium"
-      case "premium":
-        return "Premium"
-      default:
-        return "Basic"
-    }
-  }
+  // Підписки беремо з subscriptionsSlice (мульти-сабскрипшн модель: PRIMARY + опційно ADDON).
+  const primarySub = useSelector(selectPrimarySubscription)
+  const premiumAddon = useSelector(selectPremiumAddon)
 
-  // Get subscription color
-  const getSubscriptionColor = (plan: string) => {
-    switch (plan) {
-      case "premium":
+  // PRIMARY план — основний бейдж. Якщо ще нічого не загрузилось — fallback FREE.
+  const primaryCode = (primarySub?.plan?.code as PlanCode | undefined) ?? PlanCode.FREE
+  const primaryName = PLAN_DISPLAY[primaryCode]?.prettyName ?? "Free Plan"
+
+  /** Колір бейджа в залежності від PRIMARY-плану. */
+  const subscriptionBadgeColor = (() => {
+    switch (primaryCode) {
+      case PlanCode.VIP:
         return colors.accent
-      case "medium":
+      case PlanCode.BUSINESS:
         return colors.secondary
       default:
         return colors.textSecondary
     }
-  }
+  })()
 
-  // Get card type display name
-  const getCardTypeDisplay = (type: CardType) => {
-    switch (type) {
-      case CardType.BAC:
-        return "Business"
-      case CardType.PAC:
-        return "Personal"
-      case CardType.VAC:
-        return "Virtual"
-      case CardType.CAC:
-        return "Custom"
-      default:
-        return "Personal"
-    }
-  }
+  // Display name для типу картки (бере з мапи з constants/cards.ts).
+  const getCardTypeDisplay = (type: CardType) => CARD_TYPE_DISPLAY[type] ?? "Personal"
 
-  // Get card category display name
-  const getCardCategoryDisplay = (category: CardCategory) => {
-    switch (category) {
-      case CardCategory.FAMILY:
-        return "Family"
-      case CardCategory.FRIENDS:
-        return "Friends"
-      case CardCategory.WORK:
-        return "Work"
-      case CardCategory.OTHER:
-        return "Other"
-      default:
-        return "Other"
-    }
-  }
+  // Display name для категорії картки.
+  const getCardCategoryDisplay = (category: CardCategory) =>
+    CARD_CATEGORY_DISPLAY[category] ?? "Other"
 
-  // Get card type color
+  // Колір бейджа типу картки.
   const getCardTypeColor = (type: CardType) => {
     switch (type) {
       case CardType.BAC:
         return colors.accent
       case CardType.PAC:
         return colors.primary
-      case CardType.VAC:
-        return colors.secondary
-      case CardType.CAC:
+      case CardType.VIPAC:
         return colors.warning
       default:
         return colors.primary
@@ -195,7 +167,7 @@ const AccountScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 15 }]}>
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + 20 }]}
         showsVerticalScrollIndicator={false}
@@ -276,12 +248,12 @@ const AccountScreen = () => {
             </View>
           </View>
 
-          {/* Subscription Badge */}
+          {/* Subscription Badge — PRIMARY план + (опційно) Premium addon */}
           <View style={styles.subscriptionContainer}>
             <View
               style={[
                 styles.subscriptionBadge,
-                { backgroundColor: getSubscriptionColor(user?.subscriptionPlan || "basic") },
+                { backgroundColor: subscriptionBadgeColor },
               ]}
             >
               <Ionicons name="star" size={16} color={colors.background} />
@@ -295,9 +267,32 @@ const AccountScreen = () => {
                   },
                 ]}
               >
-                {getSubscriptionDisplayName(user?.subscriptionPlan || "basic")} Plan
+                {primaryName}
               </Text>
             </View>
+
+            {premiumAddon && (
+              <View
+                style={[
+                  styles.subscriptionBadge,
+                  { backgroundColor: colors.primary, marginLeft: 8 },
+                ]}
+              >
+                <Ionicons name="add-circle-outline" size={16} color={colors.background} />
+                <Text
+                  style={[
+                    styles.subscriptionText,
+                    {
+                      color: colors.background,
+                      fontFamily: typography.fontFamily.medium,
+                      fontSize: typography.fontSize.sm,
+                    },
+                  ]}
+                >
+                  Premium
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -664,7 +659,6 @@ const AccountScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 24,
   },
   loadingContainer: {
     flex: 1,
@@ -693,6 +687,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
+    paddingTop: 0,
   },
   header: {
     flexDirection: "row",
@@ -726,7 +721,10 @@ const styles = StyleSheet.create({
   },
   userEmail: {},
   subscriptionContainer: {
-    alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
   },
   subscriptionBadge: {
     flexDirection: "row",

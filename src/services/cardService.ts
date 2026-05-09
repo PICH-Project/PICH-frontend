@@ -1,23 +1,35 @@
 import api from "./api"
+import type { CardType, CardCategory } from "../constants/cards"
+
+/**
+ * Тип значення `card.type` — string-union поверх enum, щоб бек/фронт DTO
+ * лишались сумісні з string-літералами (бо backend повертає рядки).
+ */
+type CardTypeValue = `${CardType}`
+type CardCategoryValue = `${CardCategory}`
 
 export interface Card {
   id: string
-  type: "BAC" | "PAC" | "VIPAC"
+  type: CardTypeValue
   name: string
   nickname: string
   avatar?: string
   phones?: string[]
   email?: string
   social?: Record<string, string>
+  /** Кастомні нотатки на back-side (3 слоти, ключі "0"/"1"/"2"). */
+  notes?: Record<string, string>
   isPrime: boolean
   bio?: string
+  /** Контактна особа — використовується лише для BAC. */
+  contactPerson?: string
   location?: {
     country?: string
     city?: string
     address?: string
     postalCode?: string
   }
-  category?: "FAMILY" | "FRIENDS" | "WORK" | "OTHER"
+  category?: CardCategoryValue
   blockchainId?: string
   isMainCard: boolean
   isInWallet: boolean
@@ -28,44 +40,48 @@ export interface Card {
 
 // Update CreateCardPayload to exactly match the server's CreateCardDto
 export interface CreateCardPayload {
-  type: "BAC" | "PAC" | "VAC" | "CAC"
+  type: CardTypeValue
   name: string
   nickname: string
   avatar?: string
   phones?: string[]
   email?: string
   social?: Record<string, string>
+  notes?: Record<string, string>
   isPrime?: boolean
   bio?: string
+  contactPerson?: string
   location?: {
     country?: string
     city?: string
     address?: string
     postalCode?: string
   }
-  category?: "FAMILY" | "FRIENDS" | "WORK" | "OTHER"
+  category?: CardCategoryValue
   blockchainId?: string
   isMainCard?: boolean
   isInWallet?: boolean
 }
 
 export interface UpdateCardPayload {
-  type?: "BAC" | "PAC" | "VAC" | "CAC"
+  type?: CardTypeValue
   name?: string
   nickname?: string
   avatar?: string
   phone?: string
   email?: string
   social?: Record<string, string>
+  notes?: Record<string, string>
   isPrime?: boolean
   bio?: string
+  contactPerson?: string
   location?: {
     country?: string
     city?: string
     address?: string
     postalCode?: string
   }
-  category?: "FAMILY" | "FRIENDS" | "WORK" | "OTHER"
+  category?: CardCategoryValue
   blockchainId?: string
   isMainCard?: boolean
   isInWallet?: boolean

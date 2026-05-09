@@ -20,56 +20,24 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const systemColorScheme = useColorScheme()
-  const [theme, setThemeState] = useState<ThemeType>("system")
-  const [isDark, setIsDark] = useState(systemColorScheme === "dark")
-
-  useEffect(() => {
-    // Load saved theme preference
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem("theme")
-        if (savedTheme) {
-          setThemeState(savedTheme as ThemeType)
-        }
-      } catch (error) {
-        console.error("Failed to load theme preference", error)
-      }
-    }
-
-    loadTheme()
-  }, [])
-
-  useEffect(() => {
-    // Determine if dark mode should be active
-    if (theme === "system") {
-      setIsDark(systemColorScheme === "dark")
-    } else {
-      setIsDark(theme === "dark")
-    }
-  }, [theme, systemColorScheme])
+  // NOTE: Тема жорстко зафіксована на light. Dark mode вимкнено
+  // (буде додано окремою фічею пізніше). useColorScheme/AsyncStorage
+  // навмисно не читаємо, щоб системна тема не міняла кольори.
+  const [theme, setThemeState] = useState<ThemeType>("light")
+  const isDark = false
 
   const setTheme = async (newTheme: ThemeType) => {
-    setThemeState(newTheme)
+    // Поки що ігноруємо запит на зміну теми — апка завжди light.
+    setThemeState("light")
     try {
-      await AsyncStorage.setItem("theme", newTheme)
+      await AsyncStorage.setItem("theme", "light")
     } catch (error) {
       console.error("Failed to save theme preference", error)
     }
   }
 
-  // Adjust colors based on theme
-  const themeColors = {
-    ...colors,
-    // Override colors for dark mode if needed
-    ...(isDark && {
-      background: "#121212",
-      card: "#1E1E1E",
-      text: "#FFFFFF",
-      textSecondary: "#AAAAAA",
-      border: "#333333",
-    }),
-  }
+  // Кольори завжди світлі
+  const themeColors = { ...colors }
 
   return (
     <ThemeContext.Provider

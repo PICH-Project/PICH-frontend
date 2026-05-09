@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   View,
   Text,
@@ -15,28 +15,49 @@ import {
   Platform,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useSelector } from "react-redux"
+import type { RootState } from "../../store"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
-import { fetchUserQRCode, refreshUserQRCode } from "../../services/qrService"
+import { fetchCardQRCode } from "../../services/qrService"
 import * as FileSystem from "expo-file-system"
 import * as Sharing from "expo-sharing"
 import { useTheme } from "@/hooks/useTheme"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const ShareScreen = () => {
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const tabBarHeight = useTabBarHeight()
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
 
-  // Function to load the QR code
+  // Картки юзера + main card. На маунті обираємо main, інакше першу.
+  const cards = useSelector((state: RootState) => state.cards.cards)
+  const defaultCardId = useMemo(() => {
+    const main = cards.find((c) => c.isMainCard)
+    return main?.id ?? cards[0]?.id ?? null
+  }, [cards])
+
+  useEffect(() => {
+    // Якщо ще не вибрана картка, або обрана зникла зі списку — фолбек на default.
+    if (!selectedCardId || !cards.find((c) => c.id === selectedCardId)) {
+      setSelectedCardId(defaultCardId)
+    }
+  }, [defaultCardId, selectedCardId, cards])
+
+  // Завантажуємо QR для конкретної картки. Викликається при зміні selectedCardId.
   const loadQRCode = useCallback(async () => {
+    if (!selectedCardId) {
+      setQrCode(null)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
-
     try {
-      const qrCodeData = await fetchUserQRCode()
-      // The QR code is already a data URL that can be used directly
-      // It starts with "data:image/png;base64,..."
+      const qrCodeData = await fetchCardQRCode(selectedCardId)
       setQrCode(qrCodeData)
     } catch (err) {
       setError("Failed to load QR code. Please try again.")
@@ -44,29 +65,16 @@ const ShareScreen = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedCardId])
 
-  // Load QR code on component mount
   useEffect(() => {
     loadQRCode()
   }, [loadQRCode])
 
-  // Function to refresh the QR code
+  // Refresh — просто перевикликає завантаження для поточної selected картки.
   const handleRefresh = async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      // Call the refreshUserQRCode function which now correctly uses the GET endpoint
-      const newQRCode = await refreshUserQRCode()
-      setQrCode(newQRCode)
-      Alert.alert("Success", "Your connection QR code has been refreshed.")
-    } catch (err) {
-      setError("Failed to refresh QR code. Please try again.")
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    await loadQRCode()
+    Alert.alert("Refreshed", "QR code reloaded.")
   }
 
   // Function to share the QR code
@@ -108,7 +116,7 @@ const ShareScreen = () => {
   const isValidQRCode = qrCode && qrCode.startsWith("data:image")
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: "#F1F0EA" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -118,10 +126,64 @@ const ShareScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Update the header title and subtitle */}
-        <View style={styles.headerContainer}>
+        <View style={[styles.headerContainer, { paddingTop: insets.top + 15 }]}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Connect with Others</Text>
           <Text style={styles.subtitle}>Let others scan your QR code to add you as a friend</Text>
         </View>
+
+        {/* Card picker — горизонтальний скрол з картками юзера. Active card
+            виділена; default = main card (або перша). */}
+        {cards.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.cardPickerContainer}
+          >
+            {cards.map((card) => {
+              const active = card.id === selectedCardId
+              return (
+                <TouchableOpacity
+                  key={card.id}
+                  onPress={() => setSelectedCardId(card.id)}
+                  style={[
+                    styles.cardPickerChip,
+                    {
+                      backgroundColor: active ? "#27261F" : "#FFFFFF",
+                      borderColor: active ? "#27261F" : "#DEDDD1",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: active ? "#FFFFFF" : colors.textPrimary,
+                      fontWeight: "600",
+                      fontSize: 12,
+                    }}
+                  >
+                    {card.type}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: active ? "#FFFFFF" : colors.textPrimary,
+                      fontSize: 13,
+                      maxWidth: 120,
+                    }}
+                  >
+                    {card.name}
+                  </Text>
+                  {card.isMainCard && (
+                    <Ionicons
+                      name="star"
+                      size={14}
+                      color={active ? "#FFCC4D" : "#FFCC4D"}
+                    />
+                  )}
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+        )}
 
         <View style={styles.qrContainer}>
           {loading ? (
@@ -200,8 +262,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
   },
+  cardPickerContainer: {
+    paddingHorizontal: 4,
+    paddingBottom: 16,
+    gap: 8,
+  },
+  cardPickerChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6,
+  },
   headerContainer: {
-    marginTop: 36,
     marginBottom: 32,
     alignItems: "center",
   },

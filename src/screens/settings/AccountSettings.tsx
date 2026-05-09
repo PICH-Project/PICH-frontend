@@ -25,10 +25,12 @@ import { useDispatch } from "react-redux"
 import type { AppDispatch } from "../../store"
 import { updateUserProfile } from "../../store/slices/userSlice"
 import { fetchUserProfile } from "@/store/slices/authSlice"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const AccountSettingsScreen = () => {
   const navigation = useNavigation()
   const { colors, typography } = useTheme()
+  const insets = useSafeAreaInsets()
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [nickName, setNickName] = useState("")
@@ -154,7 +156,7 @@ const AccountSettingsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <TouchableOpacity onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
