@@ -22,6 +22,7 @@ import { RootState } from "@/store"
 import Svg, { Path } from "react-native-svg"
 import CreateCardNewScreen from "@/screens/main/CreateCardNew"
 import CardConstructorScreen from "@/screens/main/CardConstructor"
+import DonateCardScreen from "@/screens/main/DonateCard"
 
 const Tab = createBottomTabNavigator<TabParamList>()
 const Stack = createNativeStackNavigator<StackParamList>()
@@ -121,6 +122,7 @@ const StackNavigator = () => {
       <Stack.Screen name="EditCard" component={EditCardScreen} />
       <Stack.Screen name="SetMainCard" component={SetMainCardScreen} />
       <Stack.Screen name="DeleteCard" component={DeleteCardScreen} />
+      <Stack.Screen name="DonateCard" component={DonateCardScreen} />
     </Stack.Navigator>
   )
 }

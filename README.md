@@ -1,68 +1,154 @@
-# PICH - Digital Card Exchange Platform
+# PICH — Mobile App
 
-## Overview
+Solana-native digital business card app. Built during the Colosseum hackathon.
 
-PICH is a modern digital card exchange platform built on the Solana blockchain. It replaces traditional business cards with secure, updateable digital cards that can be shared via NFC, QR codes, or links.
+The backend API lives in a separate repo — see [Related repos](#related-repos) below.
 
-The platform offers two types of digital cards:
-- **Personal Automatic Cards (PAC)**: Free digital cards for individual networking
-- **Business Automatic Cards (BAC)**: Enhanced cards with premium customization options
+---
 
-## Key Features
+## What PICH is
 
-- Digital card creation and management
-- Real-time contact information updates across all shared cards
-- Organized contact storage with custom categorization
-- Blockchain-backed security and verification
-- NFC tap-to-share and QR code functionality
-- Social media and messaging app integration
-- Custom card design options for businesses
-- Transparent referral tracking system
-- Token-based reward system
+A mobile-first replacement for paper business cards. Users create personal (PAC), business (BAC), or VIP (VIPAC) cards, exchange them with one QR scan, pay for premium tiers in crypto on **Solana mainnet**, and can donate to Ukrainian charities through a privacy-preserving flow.
 
-## Technology Stack
+This repo is the React Native + Expo client. It handles login, card creation and exchange UI, Phantom wallet signing through Mobile Wallet Adapter, KiraPay checkout in-app, and Umbra-powered private donations.
 
-- React Native with Expo
-- Redux for state management
-- React Navigation
-- Solana blockchain integration
-- Custom authentication with JWT
+---
 
-## Installation
+## Solana integrations
 
-### Prerequisites
-- Node.js (v14 or later)
-- npm or yarn
-- Expo CLI
+Three production Solana paths live in this codebase, all running on **mainnet**:
 
-### Setup
+### 1. KiraPay subscription flow
+`src/screens/settings/Subscription.tsx`, `src/services/paymentsService.ts`
+
+- User taps Subscribe → frontend asks backend for a KiraPay checkout URL → we open it inside **Phantom's embedded browser** so the user pays in native SOL.
+- We append `/solana/` to the KiraPay path (`forceSolanaCheckout`) to skip their multi-chain picker and land directly in Solana flow — an undocumented quirk we found by trial.
+- After checkout closes, the screen polls `/subscriptions/all` for the activation confirmation. AppState listener also triggers a refresh on foreground.
+
+### 2. Mobile Wallet Adapter for Phantom
+`src/features/solana/useMobileWallet.ts`
+
+- Portable hook around `@solana-mobile/mobile-wallet-adapter-protocol-web3js` that caches the auth token in `AsyncStorage`. After the first `connect()`, subsequent `signTransaction` / `signAndSendTransaction` calls only prompt for the signature itself.
+- Used for both the donation flow and any future signing operations.
+
+### 3. Umbra Privacy donations
+`src/screens/main/DonateCard.tsx`, `src/services/donationsService.ts`
+
+- Donate tab in the Stack screen lists hardcoded Ukrainian charities (Come Back Alive, UNICEF, Prytula, UNBROKEN — fetched from the backend).
+- Tapping Donate calls backend `/donations/prepare`, which returns a base64-encoded unsigned Umbra shielded-deposit transaction.
+- Frontend deserializes the tx with `@solana/web3.js`, signs it via MWA, and submits to mainnet itself — backend never touches the signed tx.
+- Success screen links straight to Solscan; Phantom history shows the call as "App interaction — Unknown", which is exactly the privacy property Umbra promises.
+
+---
+
+## Stack
+
+- **React Native 0.79** + **Expo SDK 53** (Hermes)
+- **Redux Toolkit** + **redux-persist**
+- **@privy-io/expo** — Google OAuth login
+- **@solana/web3.js** + **@solana-mobile/mobile-wallet-adapter-protocol-web3js**
+- **expo-web-browser** — KiraPay checkout fallback
+- **expo-google-fonts** (Playfair Display + Caveat) — premium custom-font feature
+- **expo-linear-gradient** — gradient avatar frame (Solana-themed aurora ring)
+
+---
+
+## Quick start
+
+```bash
+yarn install
+
+# Make sure deps are aligned with Expo SDK 53
+npx expo install --fix
 ```
-git clone https://github.com/PICH-Project/PICH-frontend.git
-cd PICH-frontend
-npm install
-expo start
+
+Update `src/services/api.ts` so `baseURL` points at your backend (LAN IP or an ngrok tunnel — both work).
+
+### Run in Expo Go
+```bash
+npx expo start
 ```
 
-## Usage Guide
+### Run as a dev build (required for Phantom MWA)
+```bash
+npx expo prebuild --clean
+npx expo run:android
+```
 
-### Creating a Digital Card
-1. Log in to your account
-2. Navigate to the "Profile" tab
-3. Tap "Create New Card"
-4. Choose card type and fill in details
+Mobile Wallet Adapter only works on Android right now (Solana Foundation limitation) — iOS uses a different flow that's out of scope for this hackathon.
 
-### Sharing Your Card
-1. Go to the "Share" tab
-2. Select sharing method (NFC, QR Code, or Link)
-3. Complete the sharing process
+---
 
-### Managing Contacts
-1. Access the "Stack" tab to view received cards
-2. Organize contacts into categories
-3. Tap any contact to view details
+## Architecture
 
-## Roadmap
+```
+src/
+├─ screens/
+│  ├─ main/
+│  │  ├─ Account.tsx         Profile + main card preview
+│  │  ├─ Stack.tsx           Card list with "My / Connected / Donate" tabs
+│  │  ├─ CardDetail.tsx      Front + back card view, QR / favorite / actions
+│  │  ├─ CreateCardNew.tsx   Card constructor with live preview
+│  │  ├─ Scan.tsx            QR scanner for exchanging cards
+│  │  ├─ Share.tsx           QR generator for own card
+│  │  └─ DonateCard.tsx      Umbra donation flow
+│  └─ settings/
+│     └─ Subscription.tsx    Plans + KiraPay checkout + polling
+├─ components/
+│  ├─ common/Avatar.tsx      Image picker with Supabase upload
+│  └─ cards/                 Customization pickers + frame wrapper
+├─ services/                 axios-based API clients
+├─ features/solana/          useMobileWallet (MWA hook)
+├─ store/slices/             Redux Toolkit slices
+└─ constants/                Card customization, colors, assets
+```
 
-- **Current Phase**: Core platform with digital card management and sharing
-- **Next Phase**: Digital queue integration, appointment scheduling
-- **Future**: Third-party integrations, marketplace, advanced analytics
+### State
+
+- `cardsSlice` — user's own cards (CRUD)
+- `connectionsSlice` — cards added via QR scan + `connectedCards` list
+- `subscriptionsSlice` — active plans, `selectHasPremiumPerks`, `selectHasVip`
+- `userSlice` — Privy-authed user profile
+- `authSlice` — JWT lifecycle
+
+---
+
+## Key user flows
+
+| Flow | Screens |
+|---|---|
+| Sign in | `Login` → `Account` (Privy Google OAuth) |
+| Create card | `Stack` → `CardConstructor` → `CreateCardNew` |
+| Buy subscription | `Settings` → `Subscription` → Phantom checkout → polling activation |
+| Customize (Premium/VIP) | `CreateCardNew` → Font / Frame picker (gated by plan) |
+| Exchange card | `Share` (QR) + `Scan` (camera) on two devices |
+| Donate | `Stack` → Donate tab → `DonateCard` → Phantom signing → Solscan |
+
+---
+
+## Prioritization during the hackathon
+
+1. **Privy auth** — Google OAuth without backend session bookkeeping
+2. **Card CRUD + preview** — three card types with different field structures
+3. **QR exchange** — Scan + Share + Connection model
+4. **Subscription UI** — multi-tier plans, plan-gated card constructor
+5. **KiraPay payments** — first Solana integration, in-Phantom checkout
+6. **MWA signing** — portable hook with auth-token caching
+7. **Umbra donations** — second Solana integration with privacy guarantees
+8. **Premium customization** — fonts + avatar frames as plan-gated features
+9. **Supabase image uploads** — avatars + card photos
+
+---
+
+## Related repos
+
+- **[PICH-backend (NestJS)](https://github.com/PICH-Project/PICH-backend)** — API server, subscription engine, KiraPay webhook, Umbra deposit builder, Supabase upload proxy.
+
+---
+
+## Team
+
+- **Volodymyr Havryliuk** — mobile app + integrations
+- **Kateryna [TODO: surname]** — backend & Umbra deposit-builder
+
+Built for the **Colosseum** Solana hackathon.

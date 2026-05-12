@@ -21,6 +21,8 @@ import Button from "../../components/common/Button"
 import type { AppDispatch, RootState } from "../../store"
 import { fetchUserProfile } from "../../store/slices/userSlice"
 import { fetchCards } from "../../store/slices/cardsSlice"
+import { resolveNameFont } from "../../constants/cardCustomization"
+import { DEFAULT_AVATAR_URL } from "../../constants/assets"
 import type { NavigationProp } from "@react-navigation/native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import {
@@ -203,7 +205,7 @@ const AccountScreen = () => {
         <View style={[styles.profileSection, { backgroundColor: colors.card }]}>
           <View style={styles.profileHeader}>
             <Avatar
-              uri={user?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"}
+              uri={user?.avatar || DEFAULT_AVATAR_URL}
               size={80}
             />
             <View style={styles.profileInfo}>
@@ -434,7 +436,11 @@ const AccountScreen = () => {
                       styles.mainCardName,
                       {
                         color: colors.text,
-                        fontFamily: typography.fontFamily.bold,
+                        // Premium-фіча: якщо є кастомний шрифт — застосовуємо його,
+                        // інакше дефолтний bold з theme.
+                        fontFamily:
+                          resolveNameFont((mainCard as any).nameFont) ??
+                          typography.fontFamily.bold,
                         fontSize: typography.fontSize.md,
                       },
                     ]}

@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
   AppState,
   Linking,
+  RefreshControl,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import * as WebBrowser from "expo-web-browser"
 import { useNavigation } from "@react-navigation/native"
 import { useDispatch, useSelector } from "react-redux"
 import { useTheme } from "../../hooks/useTheme"
@@ -35,33 +37,102 @@ import {
 import type { SubscriptionPlan } from "../../services/subscriptionService"
 
 /**
- * Спробувати відкрити URL у wallet'у через universal link.
- * Перебираємо deeplinks за пріоритетом, fallback — system-browser.
+ * Префіксуємо path у KiraPay-checkout URL'і `/solana/` — це примушує
+ * їхній UI пропустити мульти-чейн picker і одразу показати Solana flow.
  *
- * Ми працюємо тільки з Solana → Phantom є основним. MetaMask лишаємо як
- * fallback для юзерів які чомусь захочуть EVM-варіант (бек поки що Solana).
+ * Приклад:
+ *   https://checkout.kira-pay.com/9sj68yfm13
+ *   →
+ *   https://checkout.kira-pay.com/solana/9sj68yfm13
  */
-async function openInWallet(paymentUrl: string) {
-  const cleanUrl = paymentUrl.replace(/^https?:\/\//, "")
+function forceSolanaCheckout(url: string): string {
+  try {
+    const parsed = new URL(url)
+    if (!parsed.pathname.startsWith("/solana/")) {
+      parsed.pathname = `/solana${parsed.pathname}`
+    }
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
+
+/**
+ * Відкриваємо KiraPay checkout у системному in-app браузері
+ * (SFSafariViewController на iOS / Custom Tabs на Android).
+ *
+ * Чому це краще ніж Phantom in-app browser:
+ * - Не інжектить `window.ethereum` → KiraPay одразу йде Solana flow.
+ * - Стабільніше за `Linking.openURL` — нема залежності від встановлених apps.
+ * - Юзер не виходить з нашої апки, після закриття browser-tab вертається сюди.
+ *
+ * Phantom для підпису транзи відкриється сам через KiraPay deeplink.
+ */
+async function openInBrowser(rawPaymentUrl: string): Promise<boolean> {
+  // TEMP: без /solana/ префіксу — дивимось як KiraPay поведе себе
+  // у звичайному in-app браузері (без window.ethereum injection).
+  // Раніше: const paymentUrl = forceSolanaCheckout(rawPaymentUrl)
+  const paymentUrl = rawPaymentUrl
+
+  console.log("[Subscribe/browser] rawPaymentUrl =", rawPaymentUrl)
+  console.log("[Subscribe/browser] paymentUrl (raw, no /solana/) =", paymentUrl)
+
+  try {
+    const result = await WebBrowser.openBrowserAsync(paymentUrl, {
+      // Solana-чорний на дефолтну тулбарку щоб не різало око у нашому темному UI.
+      toolbarColor: "#21201C",
+      controlsColor: "#FFFFFF",
+      // На iOS дозволяємо share/safari menu — раптом юзеру треба буде відкрити в Phantom.
+      enableBarCollapsing: true,
+      showTitle: true,
+    })
+    console.log("[Subscribe/browser] result:", result)
+    return true
+  } catch (err) {
+    console.log("[Subscribe/browser] failed:", err)
+    return false
+  }
+}
+
+/**
+ * Відкриваємо KiraPay checkout у вбудованому браузері Phantom через universal link.
+ *
+ * Офіційний формат (https://docs.phantom.com/phantom-deeplinks/provider-methods/browse):
+ *   https://phantom.app/ul/browse/<encoded-url>?ref=<encoded-ref>
+ *
+ * ФІКС "Unsupported account" — `forceSolanaCheckout()` префіксує path `/solana/`,
+ * щоб KiraPay одразу йшов Solana-only flow і не намагався хапати `window.ethereum`.
+ */
+async function openInWallet(rawPaymentUrl: string): Promise<boolean> {
+  const paymentUrl = forceSolanaCheckout(rawPaymentUrl)
   const encodedUrl = encodeURIComponent(paymentUrl)
   const encodedRef = encodeURIComponent("https://pich.app")
 
   const candidates = [
-    // Phantom universal link — для Solana flow
-    `https://phantom.app/ul/browse/${encodedUrl}/${encodedRef}`,
-    // Fallback — звичайний браузер
+    // 1. Phantom universal link з ref як query-параметром (документований формат).
+    `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedRef}`,
+    // 2. Custom scheme — буває потрібен якщо universal link перехоплюється.
+    `phantom://browse/${encodedUrl}?ref=${encodedRef}`,
+    // 3. Без ref — на випадок якщо саме ref ламає роутинг.
+    `https://phantom.app/ul/browse/${encodedUrl}`,
+    // 4. Останній резерв — системний браузер.
     paymentUrl,
   ]
+
+  console.log("[Subscribe/phantom] rawPaymentUrl =", rawPaymentUrl)
+  console.log("[Subscribe/phantom] paymentUrl (with /solana/) =", paymentUrl)
 
   for (const link of candidates) {
     try {
       const supported = await Linking.canOpenURL(link)
+      console.log(`[Subscribe/phantom] canOpenURL("${link.slice(0, 80)}...") → ${supported}`)
       if (supported) {
         await Linking.openURL(link)
+        console.log("[Subscribe/phantom] opened:", link)
         return true
       }
-    } catch {
-      // try next
+    } catch (err) {
+      console.log("[Subscribe/phantom] failed to open:", link, err)
     }
   }
   return false
@@ -97,6 +168,7 @@ const SubscriptionScreen = () => {
 
   const [subscribingPlanId, setSubscribingPlanId] = useState<string | null>(null)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Тягнемо плани і поточні підписки, якщо ще не завантажені.
@@ -104,6 +176,22 @@ const SubscriptionScreen = () => {
     if (!plans.length) dispatch(fetchActivePlans())
     dispatch(fetchAllSubscriptions())
   }, [dispatch])
+
+  /** Pull-to-refresh handler — корисно щоб вручну перевірити чи активувалась
+   *  підписка коли webhook прийшов з затримкою / закрилось polling-вікно. */
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([
+        dispatch(fetchActivePlans()).unwrap(),
+        dispatch(fetchAllSubscriptions()).unwrap(),
+      ])
+    } catch (err) {
+      console.warn("[Subscribe] refresh failed:", err)
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   /**
    * Сортуємо плани за `sortOrder` з PLAN_DISPLAY (FREE → PREMIUM → BUSINESS → VIP).
@@ -146,19 +234,30 @@ const SubscriptionScreen = () => {
 
   const startPollingForActivation = (expectedCode: PlanCode) => {
     let attempts = 0
-    const MAX_ATTEMPTS = 30 // ~30 секунд при 1с інтервалу
+    let consecutiveErrors = 0
+    let inFlight = false
+    const MAX_ATTEMPTS = 20 // 20 * 2с = ~40с — більш ніж достатньо для webhook'а
+    const MAX_CONSECUTIVE_ERRORS = 3 // 3 поспіль фейли → бек/ngrok лежить, нема сенсу довбати
     pollingRef.current = setInterval(async () => {
+      if (inFlight) return // не накопичуємо запити поверх попереднього
       attempts++
+      inFlight = true
       try {
         await dispatch(fetchAllSubscriptions()).unwrap()
-        // activeCodes оновиться через Redux; перевіряємо в наступному рендері
+        consecutiveErrors = 0
       } catch {
-        // ignore — спробуємо ще раз
+        consecutiveErrors++
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          stopPolling()
+          return
+        }
+      } finally {
+        inFlight = false
       }
       if (attempts >= MAX_ATTEMPTS) {
         stopPolling()
       }
-    }, 1000)
+    }, 2000)
   }
 
   // Як тільки в activeCodes з'являється план який ми чекали → success і стоп.
@@ -202,7 +301,10 @@ const SubscriptionScreen = () => {
         billingCycle: "monthly",
       })
 
-      // 2. Відкриваємо payment-link в Phantom (або system browser як fallback)
+      // 2. Відкриваємо payment-link у Phantom in-app browser через universal link.
+      //    URL префіксується `/solana/` (forceSolanaCheckout) щоб KiraPay
+      //    одразу йшов Solana-only flow і не падав на window.ethereum.
+      //    Якщо хочеш протестити в системному браузері — поміняй на `openInBrowser`.
       const opened = await openInWallet(paymentUrl)
       if (!opened) {
         Alert.alert("Error", "Couldn't open payment page. Please try again.")
@@ -255,6 +357,14 @@ const SubscriptionScreen = () => {
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.text}
+            colors={[colors.text]}
+          />
+        }
       >
         <Text
           style={[

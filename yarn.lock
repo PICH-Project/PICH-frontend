@@ -1128,6 +1128,16 @@
     "@ethersproject/properties" "^5.8.0"
     "@ethersproject/strings" "^5.8.0"
 
+"@expo-google-fonts/caveat@^0.4.0":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/caveat/-/caveat-0.4.2.tgz#e7c861eaa52ebf1b76dbcb3f14f49a02b165c4e7"
+  integrity sha512-kCG35tRUX8Wi+u0Jh5ck3K1u7vZkdLnwRTuKMrEnlVmikvxQFXN1KjF5cL2vqRG7Hwm7648Zl8xe1BWAoIsPCA==
+
+"@expo-google-fonts/playfair-display@^0.4.0":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/playfair-display/-/playfair-display-0.4.2.tgz#a2ce52b803eebf5e8fa62cdbb26e85b08f0665b7"
+  integrity sha512-mWhBV59RUjSS3aYpytUb7UyHHTnXcHh7epAn7gq+M4XAEh5PuMKUrP8eiUfkJLb6UwHZCi7EhQpUzxHu5OL96w==
+
 "@expo/cli@0.24.20":
   version "0.24.20"
   resolved "https://registry.yarnpkg.com/@expo/cli/-/cli-0.24.20.tgz#c9a3ad7eb93b0d6a39da20ef8804976b65838790"
@@ -3821,6 +3831,11 @@ expo-keep-awake@~14.1.4:
   version "14.1.4"
   resolved "https://registry.yarnpkg.com/expo-keep-awake/-/expo-keep-awake-14.1.4.tgz#80197728563e0e17523e5a606fbd6fbed9639503"
   integrity sha512-wU9qOnosy4+U4z/o4h8W9PjPvcFMfZXrlUoKTMBW7F4pLqhkkP/5G4EviPZixv4XWFMjn1ExQ5rV6BX8GwJsWA==
+
+expo-linear-gradient@~14.1.5:
+  version "14.1.5"
+  resolved "https://registry.yarnpkg.com/expo-linear-gradient/-/expo-linear-gradient-14.1.5.tgz#414bf0c8145089087198d4dd5a419eb324af2a02"
+  integrity sha512-BSN3MkSGLZoHMduEnAgfhoj3xqcDWaoICgIr4cIYEx1GcHfKMhzA/O4mpZJ/WC27BP1rnAqoKfbclk1eA70ndQ==
 
 expo-linking@~7.1.7:
   version "7.1.7"

@@ -33,6 +33,10 @@ export interface Card {
   blockchainId?: string
   isMainCard: boolean
   isInWallet: boolean
+  /** Преміум-фіча: 'default' | 'classic' | 'script' | null. */
+  nameFont?: string | null
+  /** VIP-фіча: 'none' | 'gold' | 'aurora' | null. */
+  avatarFrame?: string | null
   userId: string
   createdAt: string
   updatedAt: string
@@ -61,6 +65,8 @@ export interface CreateCardPayload {
   blockchainId?: string
   isMainCard?: boolean
   isInWallet?: boolean
+  nameFont?: string
+  avatarFrame?: string
 }
 
 export interface UpdateCardPayload {
@@ -85,6 +91,8 @@ export interface UpdateCardPayload {
   blockchainId?: string
   isMainCard?: boolean
   isInWallet?: boolean
+  nameFont?: string
+  avatarFrame?: string
 }
 
 /**
@@ -107,7 +115,9 @@ const cardService = {
         throw new Error("Nickname is required and cannot be empty")
       }
 
-      // Clean the payload to ensure no undefined values for required fields
+      // Clean the payload to ensure no undefined values for required fields.
+      // Будь-яке нове поле треба додавати в цей whitelist — інакше воно
+      // не дійде до бека (втратимо при відправці).
       const cleanPayload: CreateCardPayload = {
         type: payload.type,
         name: payload.name.trim(),
@@ -116,13 +126,18 @@ const cardService = {
         ...(payload.phones && { phones: payload.phones }),
         ...(payload.email && { email: payload.email }),
         ...(payload.social && Object.keys(payload.social).length > 0 && { social: payload.social }),
+        ...(payload.notes && Object.keys(payload.notes).length > 0 && { notes: payload.notes }),
         ...(payload.isPrime !== undefined && { isPrime: payload.isPrime }),
         ...(payload.bio && { bio: payload.bio }),
+        ...(payload.contactPerson && { contactPerson: payload.contactPerson }),
         ...(payload.location && { location: payload.location }),
         ...(payload.category && { category: payload.category }),
         ...(payload.blockchainId && { blockchainId: payload.blockchainId }),
         ...(payload.isMainCard !== undefined && { isMainCard: payload.isMainCard }),
         ...(payload.isInWallet !== undefined && { isInWallet: payload.isInWallet }),
+        // Premium-кастомізації — шлемо тільки коли реально задано.
+        ...(payload.nameFont && { nameFont: payload.nameFont }),
+        ...(payload.avatarFrame && { avatarFrame: payload.avatarFrame }),
       }
 
       const response = await api.post<Card>("/cards", cleanPayload)

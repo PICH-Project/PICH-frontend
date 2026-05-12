@@ -35,6 +35,9 @@ import Avatar from "@/components/common/Avatar"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { selectHasPremiumPerks } from "@/store/slices/subscriptionsSlice"
 import { VIPAC_THEME } from "@/constants/cards"
+import { resolveNameFont } from "@/constants/cardCustomization"
+import AvatarFrameWrapper from "@/components/cards/AvatarFrameWrapper"
+import { DEFAULT_AVATAR_URL } from "@/constants/assets"
 import {
   CrownIcon,
   TelegramIcon,
@@ -120,6 +123,10 @@ const CardDetail = () => {
   // VIPAC має чорно-золотисту тему. Все інше (PAC/BAC) — світла дефолтна.
   const isVipac = card?.type === "VIPAC"
   const T = VIPAC_THEME
+
+  // Кастомний шрифт name (Premium-фіча). null = system default.
+  const customNameFont = resolveNameFont(card?.nameFont)
+  const nameFontStyle = customNameFont ? { fontFamily: customNameFont } : null
 
   // Calculate the optimal card height based on available space
   useEffect(() => {
@@ -499,7 +506,13 @@ const CardDetail = () => {
                 у формі для нього немає окремого вводу. */}
             <View style={styles.backCardHeader}>
               <View style={styles.backNameSection}>
-                <Text style={[styles.backName, isVipac && { color: T.textPrimary }]}>
+                <Text
+                  style={[
+                    styles.backName,
+                    isVipac && { color: T.textPrimary },
+                    nameFontStyle,
+                  ]}
+                >
                   {card.name}
                 </Text>
                 {card.type !== "BAC" && (
@@ -641,17 +654,23 @@ const CardDetail = () => {
 
             {/* Profile Section */}
             <View style={styles.profileSection}>
-              <Avatar
-                uri={"https://randomuser.me/api/portraits/men/32.jpg"}
+              <AvatarFrameWrapper
+                frame={card.avatarFrame}
                 size={128}
-              />
+                innerBackgroundColor={isVipac ? T.cardBg : "#FFFFFF"}
+              >
+                <Avatar
+                  uri={card.avatar || DEFAULT_AVATAR_URL}
+                  size={128}
+                />
+              </AvatarFrameWrapper>
             </View>
 
             {/* Name and Nickname.
                 Для BAC: name = company name; під ним contactPerson (якщо є),
                 pseudo не показуємо. */}
             <View style={styles.nameSection}>
-              <Text style={[styles.name, isVipac && { color: T.textPrimary }]}>
+              <Text style={[styles.name, isVipac && { color: T.textPrimary }, nameFontStyle]}>
                 {card.name}
               </Text>
               {card.type === "BAC" ? (

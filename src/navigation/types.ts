@@ -1,3 +1,5 @@
+import type { CharityCard } from "../services/donationsService"
+
 export type StackParamList = {
     StackMain: undefined
     CardDetail: { cardId: string }
@@ -7,6 +9,7 @@ export type StackParamList = {
     SetMainCard: undefined
     DeleteCard: undefined
     CardConstructor: undefined
+    DonateCard: { charity: CharityCard }
 }
   
 export type TabParamList = {

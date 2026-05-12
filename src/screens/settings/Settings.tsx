@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
+import { DEFAULT_AVATAR_URL } from "../../constants/assets"
 import { useTabBarHeight } from "@/hooks/useTabBarHeight"
 import { useAuth } from "../../hooks/useAuth"
 import { useDispatch } from "react-redux"
@@ -212,7 +213,7 @@ const SettingsScreen = () => {
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + 20 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <Avatar uri={user?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={60} />
+          <Avatar uri={user?.avatar || DEFAULT_AVATAR_URL} size={60} />
           <View style={styles.profileInfo}>
             <Text
               style={[

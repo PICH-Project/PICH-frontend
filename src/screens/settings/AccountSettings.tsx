@@ -18,6 +18,7 @@ import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
 import Button from "../../components/common/Button"
+import { DEFAULT_AVATAR_URL } from "../../constants/assets"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 // Change the import from contexts to hooks
 import { useAuth } from "../../hooks/useAuth"
@@ -187,9 +188,10 @@ const AccountSettingsScreen = () => {
       >
         <View style={styles.avatarContainer}>
           <Avatar
-            uri={user?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"}
+            uri={user?.avatar || DEFAULT_AVATAR_URL}
             size={120}
             editable
+            uploadFolder="avatars"
             onImageSelected={handleAvatarChange}
           />
         </View>

@@ -7,12 +7,19 @@ import { logout } from "../store/slices/authSlice"
 // http://157.180.71.47:3003/api - prod
 // http://10.0.2.2:3003/api - Android emulator -> host
 // http://192.168.0.103:3003/api - local LAN (Seeker / phone on same Wi-Fi)
+// https://tackle-crinkle-despise.ngrok-free.dev/api - ngrok tunnel
+//   (працює і на фіз. девайсі, і на емуляторі — публічний URL)
 const api = axios.create({
-  baseURL: "http://192.168.0.103:3003/api",
+  baseURL: "https://tackle-crinkle-despise.ngrok-free.dev/api",
   headers: {
     "Content-Type": "application/json",
+    // ngrok-free.dev показує warning-page перед першим запитом якщо
+    // нема цього header'а. Без нього axios отримає HTML замість JSON.
+    "ngrok-skip-browser-warning": "true",
   },
-  timeout: 10000, // 10 seconds timeout
+  // ngrok-free сильно лагає під час навантаження (concurrent polling + image loads).
+  // 20с — компроміс щоб не падати по false-таймауту на повільних запитах.
+  timeout: 20000,
 })
 
 // Add request and response logging to the API interceptors
@@ -46,7 +53,21 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config
-    console.error(`API Error Response from ${originalRequest?.url} - Status: ${error.response?.status}`)
+    // Деталізоване логування: для HTTP-помилок показуємо status + body,
+    // для network errors (немає response) — axios code + message щоб видно
+    // що це таймаут / DNS / ngrok issue.
+    if (error.response?.status) {
+      console.error(
+        `API ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} — ` +
+          `HTTP ${error.response.status} ${error.response.statusText ?? ""}: ` +
+          `${JSON.stringify(error.response.data)}`,
+      )
+    } else {
+      console.error(
+        `API ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} — ` +
+          `NETWORK ERROR [${error.code ?? "unknown"}]: ${error.message}`,
+      )
+    }
 
     // If the error is 401 (Unauthorized) and it's not a retry
     if (error.response?.status === 401 && !originalRequest._retry) {

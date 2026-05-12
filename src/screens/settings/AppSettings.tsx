@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../hooks/useTheme"
 import Avatar from "../../components/common/Avatar"
 import Toggle from "../../components/common/Toggle"
+import { DEFAULT_AVATAR_URL } from "../../constants/assets"
 import { useTabBarHeight } from "../../hooks/useTabBarHeight"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -207,7 +208,7 @@ const AppSettingsScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.profileSection}>
-          <Avatar uri={profile?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} size={60} />
+          <Avatar uri={profile?.avatar || DEFAULT_AVATAR_URL} size={60} />
           <View style={styles.profileInfo}>
             {loading ? (
               <ActivityIndicator size="small" color={colors.primary} />

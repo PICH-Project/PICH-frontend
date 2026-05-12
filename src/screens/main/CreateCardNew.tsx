@@ -28,8 +28,19 @@ import {
   PaletteFilledIcon,
   SettingsIcon,
 } from "@/components/icons"
-import { selectHasPremiumPerks } from "@/store/slices/subscriptionsSlice"
+import { selectHasPremiumPerks, selectHasVip } from "@/store/slices/subscriptionsSlice"
 import { CardType, getEffectiveCardLimits, VIPAC_THEME } from "@/constants/cards"
+import {
+  NAME_FONT_PRESETS,
+  AVATAR_FRAME_PRESETS,
+  type NameFont,
+  type AvatarFrame,
+} from "@/constants/cardCustomization"
+import {
+  FontPickerModal,
+  FramePickerModal,
+} from "@/components/cards/CustomizationPickers"
+import AvatarFrameWrapper from "@/components/cards/AvatarFrameWrapper"
 
 type RouteParams = {
   cardType: "PAC" | "BAC" | "VIPAC";
@@ -65,7 +76,12 @@ const CreateCardNewScreen = () => {
 
   // Premium ADDON або VIP активний → перки картки і жовта корона на preview.
   const hasPerks = useSelector(selectHasPremiumPerks)
+  const hasVip = useSelector(selectHasVip)
   const crownColor = hasPerks ? "#FFD700" : "#71706A"
+
+  // Стан для bottom-sheet пікерів кастомізації.
+  const [fontPickerOpen, setFontPickerOpen] = useState(false)
+  const [framePickerOpen, setFramePickerOpen] = useState(false)
 
   const tabBarHeight = useTabBarHeight()
   const insets = useSafeAreaInsets()
@@ -105,6 +121,9 @@ const CreateCardNewScreen = () => {
      * поле, поки що йде разом з payload — якщо бек ігнорує — нічого страшного).
      */
     notes: {} as Record<string, string>,
+    /** Преміум-фічі картки. Дефолти — None/default (без преміума). */
+    nameFont: "default" as NameFont,
+    avatarFrame: "none" as AvatarFrame,
   })
 
   // Активний індекс note-слоту (0/1/2), для якого зараз відкрита модалка.
@@ -380,6 +399,11 @@ const CreateCardNewScreen = () => {
       blockchainId: formData.blockchainId.trim() || undefined,
       isMainCard: formData.isMainCard,
       isInWallet: formData.isInWallet,
+      // Преміум-кастомізації. Шлемо тільки коли != дефолт — щоб бек не
+      // ругався FREE-юзеру за зайвими fields у payload'і.
+      nameFont: formData.nameFont !== "default" ? formData.nameFont : undefined,
+      avatarFrame:
+        formData.avatarFrame !== "none" ? formData.avatarFrame : undefined,
     }
   }
 
@@ -899,12 +923,19 @@ const CreateCardNewScreen = () => {
             </View> */}
 
               <View style={styles.avatarContainer}>
-                <Avatar
-                  uri={formData.avatar}
+                <AvatarFrameWrapper
+                  frame={formData.avatarFrame}
                   size={128}
-                  editable
-                  onImageSelected={handleAvatarChange}
-                />
+                  innerBackgroundColor={isVipac ? T.cardBg : "#FFFFFF"}
+                >
+                  <Avatar
+                    uri={formData.avatar}
+                    size={128}
+                    editable
+                    uploadFolder="cards"
+                    onImageSelected={handleAvatarChange}
+                  />
+                </AvatarFrameWrapper>
               </View>
 
               {/* Identity block */}
@@ -918,6 +949,10 @@ const CreateCardNewScreen = () => {
                       borderColor: colors.border,
                       textAlign: 'center',
                     },
+                    // Premium фіча — кастомний шрифт name.
+                    NAME_FONT_PRESETS[formData.nameFont].fontFamily
+                      ? { fontFamily: NAME_FONT_PRESETS[formData.nameFont].fontFamily! }
+                      : null,
                   ]}
                   value={formData.name}
                   onChangeText={(value) => handleInputChange("name", value)}
@@ -1050,52 +1085,85 @@ const CreateCardNewScreen = () => {
           </View>
           {/* Extra space at the bottom to ensure content doesn't go under tab bar */}
           <View style={styles.bottomActions}>
-            <TouchableOpacity style={styles.actionBottomButton} activeOpacity={0.7}>
-              <TouchableOpacity
-                onPress={() => showNeededPremiumError()}
-                style={{
-                  zIndex: 5, position: 'absolute', alignItems: 'center',
-                  justifyContent: 'center', backgroundColor: '#56554E60', width: 56,
-                  height: 56, borderRadius: 28,
-                }}>
-                <YellowCrownIcon />
-              </TouchableOpacity>
-              <PaletteIcon />
+            {/* Font picker — Premium-фіча (Premium ADDON або VIP).
+                Замкнено для FREE/BUSINESS-only юзерів — корона + Alert. */}
+            <TouchableOpacity
+              style={styles.actionBottomButton}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (hasPerks) {
+                  setFontPickerOpen(true)
+                } else {
+                  Alert.alert(
+                    "Premium feature",
+                    "Custom name font is available for Premium and VIP subscribers.",
+                  )
+                }
+              }}
+            >
+              {!hasPerks && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    zIndex: 5,
+                    position: "absolute",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#56554E60",
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                  }}
+                >
+                  <YellowCrownIcon />
+                </View>
+              )}
+              <Text
+                style={[
+                  styles.fontIcon,
+                  // Якщо обраний кастомний шрифт — показуємо preview саме ним.
+                  NAME_FONT_PRESETS[formData.nameFont].fontFamily
+                    ? { fontFamily: NAME_FONT_PRESETS[formData.nameFont].fontFamily! }
+                    : null,
+                ]}
+              >
+                Aa
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionBottomButton} activeOpacity={0.7}>
-              <TouchableOpacity
-                onPress={() => showNeededPremiumError()}
-                style={{
-                  zIndex: 5, position: 'absolute', alignItems: 'center',
-                  justifyContent: 'center', backgroundColor: '#56554E60', width: 56,
-                  height: 56, borderRadius: 28,
-                }}>
-                <YellowCrownIcon />
-              </TouchableOpacity>
-              <Text style={styles.fontIcon}>Aa</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionBottomButton} activeOpacity={0.7}>
-              <View style={{
-                zIndex: 5, position: 'absolute', alignItems: 'center',
-                justifyContent: 'center', backgroundColor: '#56554E60', width: 56,
-                height: 56, borderRadius: 28,
-              }}>
-                <YellowCrownIcon />
-              </View>
+            {/* Avatar frame picker — VIP-only фіча. */}
+            <TouchableOpacity
+              style={styles.actionBottomButton}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (hasVip) {
+                  setFramePickerOpen(true)
+                } else {
+                  Alert.alert(
+                    "VIP feature",
+                    "Custom avatar frame is available for VIP subscribers only.",
+                  )
+                }
+              }}
+            >
+              {!hasVip && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    zIndex: 5,
+                    position: "absolute",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#56554E60",
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                  }}
+                >
+                  <YellowCrownIcon />
+                </View>
+              )}
               <PaletteFilledIcon />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionBottomButton} activeOpacity={0.7}>
-              <View style={{
-                zIndex: 5, position: 'absolute', alignItems: 'center',
-                justifyContent: 'center', backgroundColor: '#56554E60', width: 56,
-                height: 56, borderRadius: 28,
-              }}>
-                <YellowCrownIcon />
-              </View>
-              <SettingsIcon />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -1127,6 +1195,20 @@ const CreateCardNewScreen = () => {
         <Dialog.Button label="Cancel" onPress={() => setNoteIndex(null)} />
         <Dialog.Button label="Save" onPress={() => setNoteIndex(null)} />
       </Dialog.Container>
+
+      {/* Преміум-пікери кастомізації картки. */}
+      <FontPickerModal
+        visible={fontPickerOpen}
+        value={formData.nameFont}
+        onSelect={(font) => handleInputChange("nameFont", font)}
+        onClose={() => setFontPickerOpen(false)}
+      />
+      <FramePickerModal
+        visible={framePickerOpen}
+        value={formData.avatarFrame}
+        onSelect={(frame) => handleInputChange("avatarFrame", frame)}
+        onClose={() => setFramePickerOpen(false)}
+      />
     </>
   )
 }

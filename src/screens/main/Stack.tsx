@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   View,
   Text,
@@ -29,6 +29,10 @@ import type { RootState, AppDispatch } from "../../store"
 import { fetchCards, deleteCard } from "../../store/slices/cardsSlice"
 import type { Card } from "../../services/cardService"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import donationsService, { type CharityCard } from "../../services/donationsService"
+import { resolveNameFont } from "../../constants/cardCustomization"
+import AvatarFrameWrapper from "../../components/cards/AvatarFrameWrapper"
+import { DEFAULT_AVATAR_URL } from "../../constants/assets"
 
 interface CardGroup {
   title: string
@@ -178,8 +182,15 @@ const StackScreen = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { cards, loading } = useSelector((state: RootState) => state.cards)
   const connectedCards = useSelector((state: RootState) => state.connections.connectedCards)
-  /** Toggle: 'mine' — мої власні картки, 'connected' — чужі додані через scan. */
-  const [mode, setMode] = useState<"mine" | "connected">("mine")
+  /**
+   * Toggle режиму:
+   *  - 'mine'      — мої власні картки
+   *  - 'connected' — чужі додані через scan
+   *  - 'donate'    — hardcoded BAC charity-картки з /donations/charities
+   */
+  const [mode, setMode] = useState<"mine" | "connected" | "donate">("mine")
+  const [charities, setCharities] = useState<CharityCard[]>([])
+  const [charitiesLoading, setCharitiesLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [filteredCards, setFilteredCards] = useState<CardGroup[]>([])
   const [isFolderEnabled, setIsFolderEnabled] = useState(false)
@@ -193,12 +204,66 @@ const StackScreen = () => {
   const tabBarHeight = useTabBarHeight()
   const insets = useSafeAreaInsets()
 
-  /** Картки, які зараз показуємо: свої або чужі залежно від `mode`. */
-  const sourceCards = mode === "mine" ? cards : connectedCards
+  /**
+   * Адаптуємо CharityCard → Card-like форму щоб переюзати існуючий
+   * `renderCard`. useMemo обов'язковий — без нього новий array reference
+   * щорендеру триггерить useEffect зі starredCards в нескінченний цикл.
+   */
+  const charityAsCards: Card[] = useMemo(
+    () =>
+      charities.map(
+        (c) =>
+          ({
+            id: c.id,
+            type: c.type,
+            name: c.companyName,
+            nickname: c.contactPerson,
+            avatar: c.logoUrl,
+            bio: c.slogan,
+            phones: [],
+            socialLinks: {},
+            isMainCard: false,
+            isPrime: false,
+            isCharity: true,
+            userId: "",
+            createdAt: "",
+            updatedAt: "",
+            notes: {},
+            category: "CHARITY",
+          }) as unknown as Card,
+      ),
+    [charities],
+  )
+
+  /** Картки, які зараз показуємо — залежить від обраної таби. */
+  const sourceCards = useMemo(
+    () =>
+      mode === "mine"
+        ? cards
+        : mode === "connected"
+          ? connectedCards
+          : charityAsCards,
+    [mode, cards, connectedCards, charityAsCards],
+  )
 
   useEffect(() => {
     dispatch(fetchCards())
   }, [dispatch])
+
+  // Тягнемо charity-картки коли перший раз заходимо на таб 'donate'.
+  useEffect(() => {
+    if (mode === "donate" && charities.length === 0 && !charitiesLoading) {
+      setCharitiesLoading(true)
+      donationsService
+        .getCharities()
+        .then((data) => setCharities(data))
+        .catch((err) => {
+          console.error("Failed to fetch charities:", err)
+          Alert.alert("Error", "Couldn't load charity list. Pull to refresh.")
+        })
+        .finally(() => setCharitiesLoading(false))
+    }
+  }, [mode, charities.length, charitiesLoading])
 
   // For demo purposes, let's mark some cards as starred
   useEffect(() => {
@@ -251,7 +316,12 @@ const StackScreen = () => {
     } else {
       // Single section with all filtered cards
       if (filteredCards.length > 0) {
-        const baseTitle = mode === "mine" ? "ALL CARDS" : "CONNECTED CARDS"
+        const baseTitle =
+          mode === "mine"
+            ? "ALL CARDS"
+            : mode === "connected"
+              ? "CONNECTED CARDS"
+              : "CHARITY ORGANIZATIONS"
         filtered.push({
           title: isStarEnabled ? "SELECTED" : baseTitle,
           data: filteredCards,
@@ -277,6 +347,15 @@ const StackScreen = () => {
 
   const handleCardPress = (cardId: string) => {
     console.log('cardId', cardId);
+    // На таб 'donate' тапаємо charity-картку → ведемо на DonateCard screen,
+    // передаючи весь charity-об'єкт як param (бо у Card-сторі його нема).
+    if (mode === "donate") {
+      const charity = charities.find((c) => c.id === cardId)
+      if (charity) {
+        stackNavigation.navigate("DonateCard", { charity })
+        return
+      }
+    }
     stackNavigation.navigate("CardDetail", { cardId })
   }
 
@@ -368,7 +447,16 @@ const StackScreen = () => {
     showActionMenu(card, event)
   }
 
-  const renderCard = ({ item }: { item: Card }) => (
+  const renderCard = ({ item }: { item: Card }) => {
+    // Преміум-кастомізації — null-safe.
+    const customNameFont = resolveNameFont((item as any).nameFont)
+    const nameFontStyle = customNameFont ? { fontFamily: customNameFont } : null
+
+    // DEBUG: подивитись що приходить у renderCard для кожної картки.
+    // TODO: прибрати коли avatar issue зафікситься.
+    console.log(`[Stack] render card ${item.id.slice(0, 8)} → avatar=${item.avatar ?? "NULL"}`)
+
+    return (
     <TouchableOpacity
       style={[styles.cardOuterContainer, deletingCardId === item.id && styles.cardDeleting]}
       onPress={() => handleCardPress(item.id)}
@@ -383,13 +471,18 @@ const StackScreen = () => {
         </View>
 
         <View style={styles.cardContent}>
-          <Image
-            source={{ uri: item.avatar || "https://randomuser.me/api/portraits/men/32.jpg" }}
-            style={[styles.avatar, deletingCardId === item.id && styles.avatarDeleting]}
-          />
+          <AvatarFrameWrapper frame={(item as any).avatarFrame} size={32}>
+            <Image
+              source={{ uri: item.avatar || DEFAULT_AVATAR_URL }}
+              style={[styles.avatar, deletingCardId === item.id && styles.avatarDeleting]}
+              onError={(e) =>
+                console.log(`[Stack] Image FAILED for ${item.id.slice(0, 8)}:`, e.nativeEvent.error, "url=", item.avatar)
+              }
+            />
+          </AvatarFrameWrapper>
 
           <View style={styles.cardInfo}>
-            <Text style={[styles.cardName, deletingCardId === item.id && styles.textDeleting]}>{item.name}</Text>
+            <Text style={[styles.cardName, deletingCardId === item.id && styles.textDeleting, nameFontStyle]}>{item.name}</Text>
             <Text style={[styles.cardNickname, deletingCardId === item.id && styles.textDeleting]}>
               {item.nickname}
             </Text>
@@ -417,7 +510,8 @@ const StackScreen = () => {
         )}
       </View>
     </TouchableOpacity>
-  )
+    )
+  }
 
   const renderSectionHeader = ({ section }: { section: CardGroup }) => (
     <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -467,6 +561,22 @@ const StackScreen = () => {
               ]}
             >
               Connected{connectedCards.length > 0 ? ` (${connectedCards.length})` : ""}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.modeToggleChip,
+              mode === "donate" && styles.modeToggleChipActive,
+            ]}
+            onPress={() => setMode("donate")}
+          >
+            <Text
+              style={[
+                styles.modeToggleText,
+                mode === "donate" && styles.modeToggleTextActive,
+              ]}
+            >
+              Donate
             </Text>
           </TouchableOpacity>
         </View>

@@ -9,9 +9,8 @@ import { selectCanCreateCardType } from "@/store/slices/subscriptionsSlice"
 /**
  * DEV-флаг: коли true — лок підписки ігнорується, всі типи карток відкриваються
  * незалежно від плану. Перед релізом виставити в false.
- * TODO: revert before ship.
  */
-const DEV_BYPASS_PLAN_LOCK = true
+const DEV_BYPASS_PLAN_LOCK = false
 
 type CardOption = {
     type: CardType
